@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <!-- Background -->
+  <rect width="192" height="192" rx="42.24" fill="#0f1117"/>
+  <!-- Glow -->
+  <circle cx="96" cy="96" r="109.44000000000001" fill="#e8a855" opacity="0.08"/>
+  <!-- Sun -->
+  <circle cx="96" cy="96" r="72.96000000000001" fill="#e8a855"/>
+  <circle cx="96" cy="96" r="51.072" fill="#f5c97a"/>
+  <!-- Rays -->
+  <line x1="187.2" y1="96.0" x2="212.7" y2="96.0" stroke="#e8a855" stroke-width="7.7" stroke-linecap="round"/>
+  <line x1="160.5" y1="160.5" x2="178.5" y2="178.5" stroke="#e8a855" stroke-width="7.7" stroke-linecap="round"/>
+  <line x1="96.0" y1="187.2" x2="96.0" y2="212.7" stroke="#e8a855" stroke-width="7.7" stroke-linecap="round"/>
+  <line x1="31.5" y1="160.5" x2="13.5" y2="178.5" stroke="#e8a855" stroke-width="7.7" stroke-linecap="round"/>
+  <line x1="4.8" y1="96.0" x2="-20.7" y2="96.0" stroke="#e8a855" stroke-width="7.7" stroke-linecap="round"/>
+  <line x1="31.5" y1="31.5" x2="13.5" y2="13.5" stroke="#e8a855" stroke-width="7.7" stroke-linecap="round"/>
+  <line x1="96.0" y1="4.8" x2="96.0" y2="-20.7" stroke="#e8a855" stroke-width="7.7" stroke-linecap="round"/>
+  <line x1="160.5" y1="31.5" x2="178.5" y2="13.5" stroke="#e8a855" stroke-width="7.7" stroke-linecap="round"/>
+</svg>
