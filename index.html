@@ -15,7 +15,41 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
 </head>
-<body>
+<body class="auth-locked">
+
+  <!-- ─── AUTH SCREEN ───────────────────────────────────────── -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-icon">☀️</div>
+      <h1 class="auth-title">Sunrise</h1>
+      <p class="auth-subtitle" id="auth-subtitle">Sign in to your journal</p>
+      <form id="auth-form" novalidate>
+        <div id="auth-email-group" class="auth-field-group">
+          <input type="email" id="auth-email" class="field" placeholder="Email" autocomplete="email" required />
+        </div>
+        <input type="password" id="auth-password" class="field" placeholder="Password" autocomplete="current-password" required />
+        <button type="submit" class="btn-save auth-btn" id="auth-submit-btn">Sign In</button>
+        <p class="auth-error" id="auth-error"></p>
+      </form>
+      <p class="auth-footer">Your journal is end-to-end encrypted</p>
+    </div>
+  </div>
+
+  <!-- ─── MIGRATION PROMPT ──────────────────────────────────── -->
+  <div id="migration-prompt" class="modal" style="display:none">
+    <div class="modal-backdrop"></div>
+    <div class="modal-sheet">
+      <div class="modal-content" style="text-align:center; padding: 32px 20px;">
+        <h2 class="section-title" style="justify-content:center;">Import Local Entries?</h2>
+        <p id="migration-count" class="section-hint" style="margin:16px 0;"></p>
+        <p class="section-hint">They will be encrypted and synced to your cloud journal.</p>
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
+          <button class="btn-secondary" id="migration-skip">Skip</button>
+          <button class="btn-save" id="migration-import" style="max-width:180px;">Import</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ─── NAV ─────────────────────────────────────────────── -->
   <nav class="bottom-nav">
@@ -157,10 +191,18 @@
 
     <section class="card">
       <h2 class="section-title">Data</h2>
-      <p class="section-hint">Your journal is stored privately on this device only.</p>
+      <p class="section-hint">Your journal is end-to-end encrypted and synced to the cloud.</p>
       <div class="data-actions">
         <button class="btn-secondary" id="export-btn">Export as JSON</button>
         <button class="btn-danger" id="clear-btn">Clear All Data</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Account</h2>
+      <p class="section-hint" id="account-email"></p>
+      <div class="data-actions">
+        <button class="btn-secondary" id="logout-btn">Sign Out</button>
       </div>
     </section>
 
@@ -172,7 +214,7 @@
     </section>
 
     <section class="card about-card">
-      <p class="about-text">Sunrise · Your daily companion<br/>Built with care. All data stays on your device.</p>
+      <p class="about-text">Sunrise · Your daily companion<br/>End-to-end encrypted. Only you can read your journal.</p>
     </section>
 
   </main>
@@ -186,7 +228,10 @@
     </div>
   </div>
 
+  <script src="supabase.min.js"></script>
   <script src="quotes.js"></script>
+  <script src="crypto.js"></script>
+  <script src="supabase-client.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

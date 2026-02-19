@@ -1,13 +1,16 @@
 // ─── Sunrise Service Worker ───────────────────────────────────────────────────
 // Handles: offline caching + scheduled 7am notifications
 
-const CACHE_NAME = 'sunrise-v1';
+const CACHE_NAME = 'sunrise-v2';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './quotes.js',
+  './crypto.js',
+  './supabase-client.js',
+  './supabase.min.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',

@@ -18,21 +18,12 @@ function formatDisplayDate(isoDate) {
 }
 
 function getEntries() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-  } catch {
-    return {};
-  }
-}
-
-function saveEntries(entries) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  return SunriseDB.getEntries();
 }
 
 // ─── Daily Quote ─────────────────────────────────────────────────────────────
 
 function getDailyQuote() {
-  // Use day-of-year as a stable index so the quote doesn't change on refresh
   const now   = new Date();
   const start = new Date(now.getFullYear(), 0, 0);
   const diff  = now - start;
@@ -113,30 +104,38 @@ function readForm() {
   return data;
 }
 
-document.getElementById('journal-form').addEventListener('submit', e => {
+document.getElementById('journal-form').addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const entry   = readForm();
-  const entries = getEntries();
-  entries[todayKey()] = entry;
-  saveEntries(entries);
-
-  const status = document.getElementById('save-status');
+  const entry  = readForm();
   const btn    = document.getElementById('save-btn');
-  btn.textContent    = 'Update Today\'s Entry';
-  status.textContent = '✓ Saved';
-  status.classList.add('visible');
-  setTimeout(() => status.classList.remove('visible'), 3000);
+  const status = document.getElementById('save-status');
 
-  // Scroll to top for satisfaction
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    await SunriseDB.saveEntry(todayKey(), entry);
+
+    btn.textContent    = 'Update Today\'s Entry';
+    status.textContent = '✓ Saved & encrypted';
+    status.classList.add('visible');
+    setTimeout(() => status.classList.remove('visible'), 3000);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (err) {
+    status.textContent = 'Error saving. Please try again.';
+    status.classList.add('visible');
+    console.error('Save failed:', err);
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 // ─── History View ─────────────────────────────────────────────────────────────
 
 function renderHistory() {
   const entries  = getEntries();
-  const keys     = Object.keys(entries).sort((a, b) => b.localeCompare(a)); // newest first
+  const keys     = Object.keys(entries).sort((a, b) => b.localeCompare(a));
   const list     = document.getElementById('history-list');
   const empty    = document.getElementById('history-empty');
 
@@ -154,7 +153,6 @@ function renderHistory() {
     card.className    = 'history-card';
     card.setAttribute('aria-label', `Entry for ${formatDisplayDate(dateKey)}`);
 
-    // Build a small preview
     const preview = [
       entry.grateful1, entry.appreciated1, entry.intention
     ].filter(Boolean).join(' · ') || 'No preview available';
@@ -214,7 +212,7 @@ function openEntry(dateKey, entry) {
 }
 
 document.getElementById('modal-close').addEventListener('click', closeModal);
-document.querySelector('.modal-backdrop').addEventListener('click', closeModal);
+document.getElementById('entry-modal').querySelector('.modal-backdrop').addEventListener('click', closeModal);
 
 function closeModal() {
   document.getElementById('entry-modal').style.display = 'none';
@@ -227,7 +225,12 @@ document.addEventListener('keydown', e => {
 
 // ─── Settings View ────────────────────────────────────────────────────────────
 
+let settingsInitialized = false;
+
 function initSettings() {
+  if (settingsInitialized) return;
+  settingsInitialized = true;
+
   const toggle = document.getElementById('notif-toggle');
   const status = document.getElementById('notif-status');
 
@@ -258,10 +261,18 @@ function initSettings() {
   document.getElementById('export-btn').addEventListener('click', exportData);
 
   // Clear
-  document.getElementById('clear-btn').addEventListener('click', () => {
-    if (confirm('This will permanently delete all your journal entries. Are you sure?')) {
-      localStorage.removeItem(STORAGE_KEY);
+  document.getElementById('clear-btn').addEventListener('click', async () => {
+    if (confirm('This will permanently delete all your journal entries from the cloud. Are you sure?')) {
+      await SunriseDB.deleteAllEntries();
       alert('All data cleared.');
+    }
+  });
+
+  // Logout
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    if (confirm('Sign out of Sunrise?')) {
+      await SunriseDB.signOut();
+      location.reload();
     }
   });
 }
@@ -276,7 +287,6 @@ async function requestNotificationPermission() {
 }
 
 function scheduleNotifications() {
-  // Register/message service worker to handle the alarm
   if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
     navigator.serviceWorker.controller.postMessage({
       type: 'SCHEDULE_NOTIFICATION',
@@ -330,7 +340,6 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').then(reg => {
     console.log('SW registered:', reg.scope);
 
-    // If notifications are enabled, re-schedule on each load
     if (localStorage.getItem(NOTIF_KEY) === 'true' && Notification.permission === 'granted') {
       navigator.serviceWorker.ready.then(() => scheduleNotifications());
     }
@@ -348,6 +357,131 @@ function escapeHTML(str) {
     .replace(/"/g, '&quot;');
 }
 
-// ─── Boot ─────────────────────────────────────────────────────────────────────
+// ─── Auth Flow ────────────────────────────────────────────────────────────────
 
-initToday();
+const authScreen     = document.getElementById('auth-screen');
+const authForm       = document.getElementById('auth-form');
+const authEmail      = document.getElementById('auth-email');
+const authPassword   = document.getElementById('auth-password');
+const authError      = document.getElementById('auth-error');
+const authSubtitle   = document.getElementById('auth-subtitle');
+const authSubmitBtn  = document.getElementById('auth-submit-btn');
+const authEmailGroup = document.getElementById('auth-email-group');
+
+function showAuthScreen(mode) {
+  authScreen.classList.remove('hidden');
+  document.body.classList.add('auth-locked');
+  authError.textContent = '';
+  authPassword.value = '';
+
+  if (mode === 'unlock') {
+    authSubtitle.textContent = 'Enter your password to unlock';
+    authEmailGroup.style.display = 'none';
+    authSubmitBtn.textContent = 'Unlock';
+  } else {
+    authSubtitle.textContent = 'Sign in to your journal';
+    authEmailGroup.style.display = 'block';
+    authSubmitBtn.textContent = 'Sign In';
+  }
+}
+
+function hideAuthScreen() {
+  authScreen.classList.add('hidden');
+  document.body.classList.remove('auth-locked');
+}
+
+authForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const password = authPassword.value;
+  if (!password) return;
+
+  authError.textContent = '';
+  authSubmitBtn.disabled = true;
+  const isUnlock = authEmailGroup.style.display === 'none';
+  authSubmitBtn.innerHTML = '<span class="spinner"></span>' + (isUnlock ? ' Unlocking…' : ' Signing in…');
+
+  try {
+    if (isUnlock) {
+      await SunriseDB.unlockWithPassword(password);
+    } else {
+      const email = authEmail.value;
+      if (!email) throw new Error('Please enter your email');
+      await SunriseDB.signIn(email, password);
+    }
+
+    authPassword.value = '';
+    hideAuthScreen();
+    await postLoginInit();
+
+  } catch (err) {
+    authError.textContent = err.message || 'Sign in failed. Check your credentials.';
+    authSubmitBtn.textContent = isUnlock ? 'Unlock' : 'Sign In';
+  } finally {
+    authSubmitBtn.disabled = false;
+  }
+});
+
+async function postLoginInit() {
+  // Check for localStorage migration
+  const local = SunriseDB.hasLocalStorageEntries();
+  if (local.found && local.count > 0) {
+    showMigrationPrompt(local.count);
+  }
+
+  initToday();
+
+  const user = SunriseDB.getUser();
+  if (user) {
+    document.getElementById('account-email').textContent = user.email;
+  }
+}
+
+// ─── Migration ──────────────────────────────────────────────────────────────
+
+function showMigrationPrompt(count) {
+  const prompt = document.getElementById('migration-prompt');
+  document.getElementById('migration-count').textContent =
+    `Found ${count} journal entr${count === 1 ? 'y' : 'ies'} on this device.`;
+  prompt.style.display = 'flex';
+}
+
+document.getElementById('migration-import').addEventListener('click', async () => {
+  const btn = document.getElementById('migration-import');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Importing…';
+
+  try {
+    const count = await SunriseDB.importLocalStorageEntries();
+    alert(`Successfully imported ${count} entries.`);
+    initToday();
+    renderHistory();
+  } catch (err) {
+    alert('Import failed: ' + err.message);
+  } finally {
+    document.getElementById('migration-prompt').style.display = 'none';
+  }
+});
+
+document.getElementById('migration-skip').addEventListener('click', () => {
+  document.getElementById('migration-prompt').style.display = 'none';
+  localStorage.removeItem(STORAGE_KEY);
+});
+
+// ─── Boot ─────────────────────────────────────────────────────────────────
+
+(async function boot() {
+  const session = await SunriseDB.getSession();
+
+  if (session && SunriseDB.getCryptoKey()) {
+    // Fully authenticated with key in memory
+    hideAuthScreen();
+    await postLoginInit();
+  } else if (session) {
+    // Session exists but key is lost (page refresh)
+    showAuthScreen('unlock');
+  } else {
+    // No session
+    showAuthScreen('login');
+  }
+})();
