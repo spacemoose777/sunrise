@@ -99,7 +99,9 @@ const SunriseDB = (() => {
     for (const row of (data || [])) {
       try {
         const json = await SunriseCrypto.decrypt(row.encrypted_data, row.iv, _cryptoKey);
-        _entriesCache[row.date_key] = JSON.parse(json);
+        const parsed = JSON.parse(json);
+        // Support both old single-entry format and new array format
+        _entriesCache[row.date_key] = Array.isArray(parsed) ? parsed : [parsed];
       } catch (e) {
         console.warn('Failed to decrypt entry for', row.date_key, e);
       }
@@ -126,6 +128,30 @@ const SunriseDB = (() => {
 
     if (error) throw error;
     _entriesCache[dateKey] = entryData;
+  }
+
+  async function appendEntry(dateKey, singleEntry) {
+    // Get existing entries for this day (or start fresh)
+    const existing = _entriesCache[dateKey] || [];
+    const dayEntries = Array.isArray(existing) ? [...existing] : [existing];
+    dayEntries.push(singleEntry);
+
+    // Encrypt the full array and upsert
+    const json = JSON.stringify(dayEntries);
+    const { ciphertext, iv } = await SunriseCrypto.encrypt(json, _cryptoKey);
+
+    const { error } = await supabase
+      .from('entries')
+      .upsert({
+        user_id: _user.id,
+        date_key: dateKey,
+        encrypted_data: ciphertext,
+        iv: iv,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,date_key' });
+
+    if (error) throw error;
+    _entriesCache[dateKey] = dayEntries;
   }
 
   async function deleteAllEntries() {
@@ -170,7 +196,7 @@ const SunriseDB = (() => {
   return {
     signIn, signOut, getSession, getUser, getCryptoKey,
     unlockWithPassword,
-    getEntries, saveEntry, deleteAllEntries,
+    getEntries, saveEntry, appendEntry, deleteAllEntries,
     hasLocalStorageEntries, importLocalStorageEntries
   };
 

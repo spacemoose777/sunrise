@@ -543,6 +543,36 @@ input:checked + .toggle-slider::before {
   line-height: 1.8;
 }
 
+/* ─── Timezone select ──────────────────────────────────────────────────────── */
+.tz-select {
+  margin-top: 12px;
+  cursor: pointer;
+}
+
+.tz-status {
+  margin-top: 10px;
+  font-size: 0.82rem;
+  color: var(--success);
+}
+
+/* ─── Today entry count ────────────────────────────────────────────────────── */
+.today-entry-count {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+}
+
+/* ─── History entry time badge ─────────────────────────────────────────────── */
+.history-entry-time {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: none;
+}
+
 /* ─── Scrollbar (desktop) ───────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }

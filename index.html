@@ -75,6 +75,9 @@
       <h1 class="app-title">Sunrise</h1>
     </header>
 
+    <!-- Today's entry count -->
+    <p class="today-entry-count" id="today-entry-count" style="display:none"></p>
+
     <!-- Quote of the Day -->
     <section class="card quote-card">
       <div class="quote-mark">"</div>
@@ -146,7 +149,7 @@
       </section>
 
       <div class="submit-area">
-        <button type="submit" class="btn-save" id="save-btn">Save Today's Entry</button>
+        <button type="submit" class="btn-save" id="save-btn">Save Entry</button>
         <p class="save-status" id="save-status"></p>
       </div>
 
@@ -175,6 +178,41 @@
     <header class="page-header">
       <h1 class="app-title">Settings</h1>
     </header>
+
+    <section class="card">
+      <h2 class="section-title">Timezone</h2>
+      <p class="section-hint">Set your timezone so entries are grouped by your local date.</p>
+      <select class="field tz-select" id="tz-select">
+        <option value="Pacific/Auckland">Pacific/Auckland (NZST/NZDT)</option>
+        <option value="Pacific/Chatham">Pacific/Chatham</option>
+        <option value="Pacific/Fiji">Pacific/Fiji</option>
+        <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+        <option value="Asia/Seoul">Asia/Seoul (KST)</option>
+        <option value="Asia/Shanghai">Asia/Shanghai (CST)</option>
+        <option value="Asia/Hong_Kong">Asia/Hong Kong (HKT)</option>
+        <option value="Asia/Singapore">Asia/Singapore (SGT)</option>
+        <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+        <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+        <option value="Europe/Moscow">Europe/Moscow (MSK)</option>
+        <option value="Europe/Istanbul">Europe/Istanbul (TRT)</option>
+        <option value="Europe/Athens">Europe/Athens (EET)</option>
+        <option value="Europe/Berlin">Europe/Berlin (CET)</option>
+        <option value="Europe/Paris">Europe/Paris (CET)</option>
+        <option value="Europe/London">Europe/London (GMT/BST)</option>
+        <option value="Atlantic/Reykjavik">Atlantic/Reykjavik (GMT)</option>
+        <option value="America/Sao_Paulo">America/Sao Paulo (BRT)</option>
+        <option value="America/New_York">America/New York (EST/EDT)</option>
+        <option value="America/Chicago">America/Chicago (CST/CDT)</option>
+        <option value="America/Denver">America/Denver (MST/MDT)</option>
+        <option value="America/Los_Angeles">America/Los Angeles (PST/PDT)</option>
+        <option value="America/Anchorage">America/Anchorage (AKST/AKDT)</option>
+        <option value="Pacific/Honolulu">Pacific/Honolulu (HST)</option>
+        <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</option>
+        <option value="Australia/Adelaide">Australia/Adelaide (ACST/ACDT)</option>
+        <option value="Australia/Perth">Australia/Perth (AWST)</option>
+      </select>
+      <p class="tz-status save-status" id="tz-status"></p>
+    </section>
 
     <section class="card">
       <h2 class="section-title">Morning Reminder</h2>

@@ -1,7 +1,7 @@
 // ─── Sunrise Service Worker ───────────────────────────────────────────────────
 // Handles: offline caching + scheduled 7am notifications
 
-const CACHE_NAME = 'sunrise-v2';
+const CACHE_NAME = 'sunrise-v3';
 const ASSETS = [
   './',
   './index.html',

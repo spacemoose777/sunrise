@@ -2,11 +2,25 @@
 
 const STORAGE_KEY = 'sunrise_entries';
 const NOTIF_KEY   = 'sunrise_notif_enabled';
+const TZ_KEY      = 'sunrise_timezone';
+
+// ─── Timezone ────────────────────────────────────────────────────────────────
+
+function getTimezone() {
+  return localStorage.getItem(TZ_KEY) || Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
+function setTimezone(tz) {
+  localStorage.setItem(TZ_KEY, tz);
+}
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
 function todayKey() {
-  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const tz = getTimezone();
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  return parts; // YYYY-MM-DD (en-CA locale gives this format)
 }
 
 function formatDisplayDate(isoDate) {
@@ -22,6 +36,10 @@ function getEntries() {
 }
 
 // ─── Daily Quote ─────────────────────────────────────────────────────────────
+
+function getRandomQuote() {
+  return QUOTES[Math.floor(Math.random() * QUOTES.length)];
+}
 
 function getDailyQuote() {
   const now   = new Date();
@@ -61,17 +79,46 @@ function initToday() {
   document.getElementById('today-date').textContent = formatDisplayDate(todayKey());
 
   // Quote
-  const q = getDailyQuote();
+  refreshQuote();
+
+  // Show today's saved entries count
+  updateTodayEntryCount();
+
+  // Always start with a fresh form for a new entry
+  clearForm();
+  document.getElementById('save-btn').textContent = 'Save Entry';
+}
+
+function refreshQuote() {
+  const q = getRandomQuote();
   document.getElementById('daily-quote').textContent  = q.text;
   document.getElementById('quote-author').textContent = q.author ? `— ${q.author}` : '';
+}
 
-  // Pre-fill form if today's entry exists
+function updateTodayEntryCount() {
   const entries = getEntries();
-  const entry   = entries[todayKey()];
-  if (entry) {
-    fillForm(entry);
-    document.getElementById('save-btn').textContent = 'Update Today\'s Entry';
+  const todayEntries = entries[todayKey()] || [];
+  const countEl = document.getElementById('today-entry-count');
+  if (todayEntries.length > 0) {
+    countEl.textContent = `${todayEntries.length} entr${todayEntries.length === 1 ? 'y' : 'ies'} saved today`;
+    countEl.style.display = 'block';
+  } else {
+    countEl.style.display = 'none';
   }
+}
+
+function clearForm() {
+  const form = document.getElementById('journal-form');
+  const fields = [
+    'grateful1','grateful2','grateful3',
+    'appreciated1','appreciated2','appreciated3',
+    'forward1','forward2','forward3',
+    'intention','awesome','thoughts'
+  ];
+  fields.forEach(name => {
+    const el = form.elements[name];
+    if (el) el.value = '';
+  });
 }
 
 function fillForm(entry) {
@@ -108,6 +155,11 @@ document.getElementById('journal-form').addEventListener('submit', async (e) => 
   e.preventDefault();
 
   const entry  = readForm();
+
+  // Check if the form has any content
+  const hasContent = Object.entries(entry).some(([k, v]) => k !== 'savedAt' && v);
+  if (!hasContent) return;
+
   const btn    = document.getElementById('save-btn');
   const status = document.getElementById('save-status');
 
@@ -115,12 +167,18 @@ document.getElementById('journal-form').addEventListener('submit', async (e) => 
   btn.textContent = 'Saving…';
 
   try {
-    await SunriseDB.saveEntry(todayKey(), entry);
+    await SunriseDB.appendEntry(todayKey(), entry);
 
-    btn.textContent    = 'Update Today\'s Entry';
     status.textContent = '✓ Saved & encrypted';
     status.classList.add('visible');
     setTimeout(() => status.classList.remove('visible'), 3000);
+
+    // Clear form for a new entry and refresh quote
+    clearForm();
+    refreshQuote();
+    updateTodayEntryCount();
+    btn.textContent = 'Save Entry';
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (err) {
     status.textContent = 'Error saving. Please try again.';
@@ -148,22 +206,32 @@ function renderHistory() {
   empty.style.display = 'none';
 
   keys.forEach(dateKey => {
-    const entry = entries[dateKey];
-    const card  = document.createElement('button');
-    card.className    = 'history-card';
-    card.setAttribute('aria-label', `Entry for ${formatDisplayDate(dateKey)}`);
+    const dayEntries = entries[dateKey];
+    // Support both old single-entry format and new array format
+    const entryArray = Array.isArray(dayEntries) ? dayEntries : [dayEntries];
 
-    const preview = [
-      entry.grateful1, entry.appreciated1, entry.intention
-    ].filter(Boolean).join(' · ') || 'No preview available';
+    entryArray.forEach((entry, idx) => {
+      const card  = document.createElement('button');
+      card.className    = 'history-card';
+      const entryLabel = entryArray.length > 1 ? ` (entry ${idx + 1})` : '';
+      card.setAttribute('aria-label', `Entry for ${formatDisplayDate(dateKey)}${entryLabel}`);
 
-    card.innerHTML = `
-      <div class="history-date">${formatDisplayDate(dateKey)}</div>
-      <div class="history-preview">${escapeHTML(preview)}</div>
-    `;
+      const preview = [
+        entry.grateful1, entry.appreciated1, entry.intention
+      ].filter(Boolean).join(' · ') || 'No preview available';
 
-    card.addEventListener('click', () => openEntry(dateKey, entry));
-    list.appendChild(card);
+      const timeStr = entry.savedAt
+        ? new Date(entry.savedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+        : '';
+
+      card.innerHTML = `
+        <div class="history-date">${formatDisplayDate(dateKey)}${entryArray.length > 1 ? ` <span class="history-entry-time">${timeStr}</span>` : ''}</div>
+        <div class="history-preview">${escapeHTML(preview)}</div>
+      `;
+
+      card.addEventListener('click', () => openEntry(dateKey, entry));
+      list.appendChild(card);
+    });
   });
 }
 
@@ -255,6 +323,20 @@ function initSettings() {
       status.textContent = 'Notifications disabled.';
       status.className   = 'notif-status';
     }
+  });
+
+  // Timezone
+  const tzSelect = document.getElementById('tz-select');
+  const tzStatus = document.getElementById('tz-status');
+  tzSelect.value = getTimezone();
+  tzSelect.addEventListener('change', () => {
+    setTimezone(tzSelect.value);
+    tzStatus.textContent = `✓ Timezone set to ${tzSelect.value}`;
+    tzStatus.classList.add('visible');
+    setTimeout(() => tzStatus.classList.remove('visible'), 3000);
+    // Refresh the today view to use the new timezone
+    document.getElementById('today-date').textContent = formatDisplayDate(todayKey());
+    updateTodayEntryCount();
   });
 
   // Export
