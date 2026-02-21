@@ -110,6 +110,7 @@ function updateTodayEntryCount() {
 function clearForm() {
   const form = document.getElementById('journal-form');
   const fields = [
+    'feeling',
     'grateful1','grateful2','grateful3',
     'appreciated1','appreciated2','appreciated3',
     'forward1','forward2','forward3',
@@ -124,6 +125,7 @@ function clearForm() {
 function fillForm(entry) {
   const form = document.getElementById('journal-form');
   const fields = [
+    'feeling',
     'grateful1','grateful2','grateful3',
     'appreciated1','appreciated2','appreciated3',
     'forward1','forward2','forward3',
@@ -139,6 +141,7 @@ function readForm() {
   const form = document.getElementById('journal-form');
   const data = { savedAt: new Date().toISOString() };
   const fields = [
+    'feeling',
     'grateful1','grateful2','grateful3',
     'appreciated1','appreciated2','appreciated3',
     'forward1','forward2','forward3',
@@ -242,6 +245,7 @@ function openEntry(dateKey, entry) {
   const content = document.getElementById('modal-content');
 
   const sections = [
+    { label: '🫧 Feeling',          items: [entry.feeling] },
     { label: '🌿 Gratitude',        items: [entry.grateful1, entry.grateful2, entry.grateful3] },
     { label: '✨ Appreciation',     items: [entry.appreciated1, entry.appreciated2, entry.appreciated3] },
     { label: '🌅 Looking Forward',  items: [entry.forward1, entry.forward2, entry.forward3] },
