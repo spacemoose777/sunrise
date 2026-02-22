@@ -480,22 +480,59 @@ let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredInstallPrompt = e;
+
+  // Wire up the Settings install button
   const btn = document.getElementById('install-btn');
   if (btn) {
     btn.style.display = 'inline-flex';
     document.getElementById('install-hint').style.display = 'none';
-    btn.addEventListener('click', async () => {
-      deferredInstallPrompt.prompt();
-      const { outcome } = await deferredInstallPrompt.userChoice;
-      if (outcome === 'accepted') {
-        btn.style.display = 'none';
-        document.getElementById('install-hint').style.display = 'block';
-        document.getElementById('install-hint').textContent = '✓ Sunrise added to your home screen!';
-      }
-      deferredInstallPrompt = null;
-    });
+    btn.addEventListener('click', () => triggerInstallPrompt());
+  }
+
+  // If the user is already logged in when the event fires, show the banner
+  if (!document.body.classList.contains('auth-locked')) {
+    showInstallBanner();
   }
 });
+
+function showInstallBanner() {
+  if (localStorage.getItem('sunrise_install_dismissed')) return;
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  if (!deferredInstallPrompt) return;
+
+  const banner = document.getElementById('install-banner');
+  if (!banner) return;
+  banner.style.display = 'flex';
+
+  document.getElementById('install-banner-btn').addEventListener('click', () => {
+    banner.style.display = 'none';
+    triggerInstallPrompt();
+  });
+
+  document.getElementById('install-banner-dismiss').addEventListener('click', () => {
+    banner.style.display = 'none';
+    localStorage.setItem('sunrise_install_dismissed', 'true');
+  });
+}
+
+async function triggerInstallPrompt() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  if (outcome === 'accepted') {
+    localStorage.setItem('sunrise_install_dismissed', 'true');
+    const banner = document.getElementById('install-banner');
+    if (banner) banner.style.display = 'none';
+    const btn = document.getElementById('install-btn');
+    if (btn) {
+      btn.style.display = 'none';
+      const hint = document.getElementById('install-hint');
+      hint.style.display = 'block';
+      hint.textContent = '✓ Sunrise added to your home screen!';
+    }
+  }
+}
 
 // ─── Service Worker Registration ──────────────────────────────────────────────
 
@@ -612,6 +649,9 @@ async function postLoginInit() {
   if (user) {
     document.getElementById('account-email').textContent = user.email;
   }
+
+  // Show install banner if the browser supports PWA installation
+  showInstallBanner();
 }
 
 // ─── Migration ──────────────────────────────────────────────────────────────

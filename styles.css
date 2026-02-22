@@ -535,6 +535,53 @@ input:checked + .toggle-slider::before {
 }
 .btn-danger:hover { background: rgba(224,108,108,0.18); }
 
+/* ─── Install Banner (Today view) ──────────────────────────────────────────── */
+.install-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: linear-gradient(135deg, var(--bg-card) 0%, #1a2035 100%);
+  border: 1px solid rgba(232,168,85,0.35);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.install-banner-text {
+  font-size: 0.88rem;
+  color: var(--text);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.install-banner-btns {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.install-banner-btns .btn-save {
+  padding: 8px 18px;
+  font-size: 0.82rem;
+  max-width: none;
+  width: auto;
+  box-shadow: none;
+}
+
+.install-banner-dismiss {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 4px 8px;
+  font-family: var(--font);
+  transition: color var(--transition);
+}
+.install-banner-dismiss:hover { color: var(--text); }
+
 .install-hint {
   margin-top: 12px;
   font-size: 0.85rem;
