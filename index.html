@@ -85,6 +85,13 @@
       <p id="quote-author" class="quote-author"></p>
     </section>
 
+    <!-- Daily Question -->
+    <section class="card question-card">
+      <div class="question-mark">?</div>
+      <p class="question-label">Reflect on this</p>
+      <p id="daily-question" class="question-text"></p>
+    </section>
+
     <!-- Journal Form -->
     <form id="journal-form" novalidate>
 
@@ -222,6 +229,16 @@
     </section>
 
     <section class="card">
+      <h2 class="section-title">Daily Questions</h2>
+      <p class="section-hint">A thought-provoking question appears each day. Add your own to the rotation.</p>
+      <div id="custom-questions-list" class="custom-questions-list"></div>
+      <div class="question-add-row">
+        <textarea class="field field-wrap" id="new-question-input" placeholder="Add your own question to the rotation…" rows="1" autocomplete="off"></textarea>
+        <button type="button" class="btn-secondary" id="add-question-btn">Add</button>
+      </div>
+    </section>
+
+    <section class="card">
       <h2 class="section-title">Morning Reminder</h2>
       <p class="section-hint">Enable a daily notification at 7:00 am to prompt your journal.</p>
       <div class="setting-row">
@@ -275,6 +292,7 @@
 
   <script src="supabase.min.js"></script>
   <script src="quotes.js"></script>
+  <script src="questions.js"></script>
   <script src="crypto.js"></script>
   <script src="supabase-client.js"></script>
   <script src="app.js"></script>

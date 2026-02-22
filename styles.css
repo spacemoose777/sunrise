@@ -564,6 +564,93 @@ input:checked + .toggle-slider::before {
   color: var(--success);
 }
 
+/* ─── Question Card ─────────────────────────────────────────────────────────── */
+.question-card {
+  background: linear-gradient(135deg, #181f32 0%, #1b2238 100%);
+  border-color: rgba(110, 150, 230, 0.22);
+  position: relative;
+  overflow: hidden;
+}
+.question-card::before {
+  content: '';
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(110, 150, 230, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.question-mark {
+  font-size: 3rem;
+  line-height: 1;
+  color: #8aaaf0;
+  opacity: 0.4;
+  font-family: Georgia, serif;
+  margin-bottom: -8px;
+}
+
+.question-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8aaaf0;
+  margin-bottom: 8px;
+}
+
+.question-text {
+  font-size: 1rem;
+  color: var(--text);
+  line-height: 1.7;
+  font-weight: 500;
+}
+
+/* ─── Custom Questions (Settings) ────────────────────────────────────────────── */
+.custom-questions-list {
+  margin-bottom: 10px;
+}
+
+.custom-question-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-card-2);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  border-left: 3px solid #8aaaf0;
+}
+
+.custom-question-text {
+  flex: 1;
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.custom-question-delete {
+  background: none;
+  border: none;
+  color: var(--text-hint);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 2px 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  font-family: var(--font);
+  transition: color var(--transition);
+}
+.custom-question-delete:hover { color: var(--danger); }
+
+.question-add-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  margin-top: 4px;
+}
+.question-add-row .field { flex: 1; }
+.question-add-row .btn-secondary { flex-shrink: 0; }
+
 /* ─── Today entry count ────────────────────────────────────────────────────── */
 .today-entry-count {
   text-align: center;

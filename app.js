@@ -1,8 +1,9 @@
 // ─── Sunrise App ─────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = 'sunrise_entries';
-const NOTIF_KEY   = 'sunrise_notif_enabled';
-const TZ_KEY      = 'sunrise_timezone';
+const STORAGE_KEY        = 'sunrise_entries';
+const NOTIF_KEY          = 'sunrise_notif_enabled';
+const TZ_KEY             = 'sunrise_timezone';
+const CUSTOM_QUESTIONS_KEY = 'sunrise_custom_questions';
 
 // ─── Timezone ────────────────────────────────────────────────────────────────
 
@@ -33,6 +34,25 @@ function formatDisplayDate(isoDate) {
 
 function getEntries() {
   return SunriseDB.getEntries();
+}
+
+// ─── Daily Question ───────────────────────────────────────────────────────────
+
+function getCustomQuestions() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_QUESTIONS_KEY)) || []; }
+  catch { return []; }
+}
+
+function saveCustomQuestions(questions) {
+  localStorage.setItem(CUSTOM_QUESTIONS_KEY, JSON.stringify(questions));
+}
+
+function getDailyQuestion() {
+  const all = [...DAILY_QUESTIONS, ...getCustomQuestions()];
+  const now      = new Date();
+  const start    = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now - start) / 86400000);
+  return all[dayOfYear % all.length];
 }
 
 // ─── Daily Quote ─────────────────────────────────────────────────────────────
@@ -80,6 +100,9 @@ function initToday() {
 
   // Quote
   refreshQuote();
+
+  // Daily question
+  document.getElementById('daily-question').textContent = getDailyQuestion();
 
   // Show today's saved entries count
   updateTodayEntryCount();
@@ -338,6 +361,22 @@ function initSettings() {
     }
   });
 
+  // Custom questions
+  renderCustomQuestions();
+  const newQuestionInput = document.getElementById('new-question-input');
+  const addQuestionBtn   = document.getElementById('add-question-btn');
+  newQuestionInput.addEventListener('input', () => autoResize(newQuestionInput));
+  addQuestionBtn.addEventListener('click', () => {
+    const text = newQuestionInput.value.trim();
+    if (!text) return;
+    const qs = getCustomQuestions();
+    qs.push(text);
+    saveCustomQuestions(qs);
+    newQuestionInput.value = '';
+    autoResize(newQuestionInput);
+    renderCustomQuestions();
+  });
+
   // Timezone
   const tzSelect = document.getElementById('tz-select');
   const tzStatus = document.getElementById('tz-status');
@@ -369,6 +408,35 @@ function initSettings() {
       await SunriseDB.signOut();
       location.reload();
     }
+  });
+}
+
+// ─── Custom Questions ─────────────────────────────────────────────────────────
+
+function renderCustomQuestions() {
+  const list      = document.getElementById('custom-questions-list');
+  const questions = getCustomQuestions();
+
+  if (questions.length === 0) {
+    list.innerHTML = '';
+    return;
+  }
+
+  list.innerHTML = questions.map((q, i) => `
+    <div class="custom-question-item">
+      <span class="custom-question-text">${escapeHTML(q)}</span>
+      <button class="custom-question-delete" data-index="${i}" aria-label="Delete question">✕</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.custom-question-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.index, 10);
+      const qs  = getCustomQuestions();
+      qs.splice(idx, 1);
+      saveCustomQuestions(qs);
+      renderCustomQuestions();
+    });
   });
 }
 
