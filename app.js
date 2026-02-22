@@ -87,6 +87,9 @@ function initToday() {
   // Always start with a fresh form for a new entry
   clearForm();
   document.getElementById('save-btn').textContent = 'Save Entry';
+
+  // Wire up auto-resize on all wrapping textareas
+  initAutoResize();
 }
 
 function refreshQuote() {
@@ -118,7 +121,10 @@ function clearForm() {
   ];
   fields.forEach(name => {
     const el = form.elements[name];
-    if (el) el.value = '';
+    if (el) {
+      el.value = '';
+      if (el.classList.contains('field-wrap')) autoResize(el);
+    }
   });
 }
 
@@ -133,7 +139,10 @@ function fillForm(entry) {
   ];
   fields.forEach(name => {
     const el = form.elements[name];
-    if (el && entry[name] !== undefined) el.value = entry[name];
+    if (el && entry[name] !== undefined) {
+      el.value = entry[name];
+      if (el.classList.contains('field-wrap')) autoResize(el);
+    }
   });
 }
 
@@ -430,6 +439,20 @@ if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then(() => scheduleNotifications());
     }
   }).catch(err => console.warn('SW registration failed:', err));
+}
+
+// ─── Auto-resize textareas ────────────────────────────────────────────────────
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function initAutoResize() {
+  document.querySelectorAll('textarea.field-wrap').forEach(el => {
+    el.addEventListener('input', () => autoResize(el));
+    autoResize(el);
+  });
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

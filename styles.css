@@ -179,6 +179,15 @@ body {
   line-height: 1.6;
 }
 
+.field-wrap {
+  resize: none;
+  overflow: hidden;
+  min-height: 42px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* ─── Save Button ───────────────────────────────────────────────────────────── */
 .submit-area {
   padding: 8px 0 16px;
