@@ -652,6 +652,12 @@ input:checked + .toggle-slider::before {
   font-weight: 500;
 }
 
+.question-reflection {
+  margin-top: 14px;
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(110,150,230,0.25);
+}
+
 /* ─── Custom Questions (Settings) ────────────────────────────────────────────── */
 .custom-questions-list {
   margin-bottom: 10px;

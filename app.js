@@ -140,7 +140,7 @@ function clearForm() {
     'grateful1','grateful2','grateful3',
     'appreciated1','appreciated2','appreciated3',
     'forward1','forward2','forward3',
-    'intention','awesome','thoughts'
+    'intention','awesome','reflection','thoughts'
   ];
   fields.forEach(name => {
     const el = form.elements[name];
@@ -158,7 +158,7 @@ function fillForm(entry) {
     'grateful1','grateful2','grateful3',
     'appreciated1','appreciated2','appreciated3',
     'forward1','forward2','forward3',
-    'intention','awesome','thoughts'
+    'intention','awesome','reflection','thoughts'
   ];
   fields.forEach(name => {
     const el = form.elements[name];
@@ -177,7 +177,7 @@ function readForm() {
     'grateful1','grateful2','grateful3',
     'appreciated1','appreciated2','appreciated3',
     'forward1','forward2','forward3',
-    'intention','awesome','thoughts'
+    'intention','awesome','reflection','thoughts'
   ];
   fields.forEach(name => {
     const el = form.elements[name];
@@ -283,6 +283,7 @@ function openEntry(dateKey, entry) {
     { label: '🌅 Looking Forward',  items: [entry.forward1, entry.forward2, entry.forward3] },
     { label: '🎯 Intention',        items: [entry.intention] },
     { label: '💛 You Are Awesome',  items: [entry.awesome] },
+    { label: '? Reflection',        items: [entry.reflection], multiline: true },
     { label: '💭 On My Mind',       items: [entry.thoughts], multiline: true },
   ];
 
