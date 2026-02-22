@@ -512,7 +512,7 @@ if ('serviceWorker' in navigator) {
 // ─── Auto-resize textareas ────────────────────────────────────────────────────
 
 function autoResize(el) {
-  el.style.height = 'auto';
+  el.style.height = '0px';
   el.style.height = el.scrollHeight + 'px';
 }
 
