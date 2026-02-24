@@ -26,37 +26,47 @@ self.addEventListener('install', event => {
   );
 });
 
-// ─── Activate: clear old caches ──────────────────────────────────────────────
+// ─── Activate: clear old caches, then notify clients to reload ───────────────
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys().then(keys => {
+      const stale = keys.filter(k => k !== CACHE_NAME);
+      return Promise.all(stale.map(k => caches.delete(k))).then(() => stale.length > 0);
+    }).then(wasUpdate => {
+      return self.clients.claim().then(() => {
+        if (wasUpdate) {
+          // Tell all open tabs to reload so they get the fresh assets
+          self.clients.matchAll({ type: 'window' }).then(clients => {
+            clients.forEach(c => c.postMessage({ type: 'SW_UPDATED' }));
+          });
+        }
+      });
+    })
   );
 });
 
-// ─── Fetch: serve from cache, fallback to network ────────────────────────────
+// ─── Fetch: network-first, fall back to cache (so updates are always picked up)
 self.addEventListener('fetch', event => {
   // Only intercept same-origin requests
   if (!event.request.url.startsWith(self.location.origin)) return;
 
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        // Cache fresh responses for app assets
+    fetch(event.request)
+      .then(response => {
+        // Update the cache with the fresh response
         if (response && response.status === 200 && response.type === 'basic') {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
         return response;
-      });
-    }).catch(() => {
-      // Offline fallback for navigation
-      if (event.request.mode === 'navigate') {
-        return caches.match('./index.html');
-      }
-    })
+      })
+      .catch(() => {
+        // Offline: serve from cache
+        return caches.match(event.request).then(cached => {
+          if (cached) return cached;
+          if (event.request.mode === 'navigate') return caches.match('./index.html');
+        });
+      })
   );
 });
 

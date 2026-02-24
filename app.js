@@ -545,6 +545,13 @@ if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then(() => scheduleNotifications());
     }
   }).catch(err => console.warn('SW registration failed:', err));
+
+  // Reload the page when a new service worker activates (picks up fresh assets)
+  navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data && event.data.type === 'SW_UPDATED') {
+      window.location.reload();
+    }
+  });
 }
 
 // ─── Auto-resize textareas ────────────────────────────────────────────────────
