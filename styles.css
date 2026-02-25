@@ -829,3 +829,223 @@ body.auth-locked .bottom-nav,
 body.auth-locked .view {
   display: none !important;
 }
+
+/* ─── Greeting ───────────────────────────────────────────────────────────────── */
+.greeting {
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+  font-weight: 400;
+  min-height: 1.4em;
+}
+
+/* ─── Print buttons (Today view) ─────────────────────────────────────────────── */
+.print-action-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.print-btn {
+  font-size: 0.82rem;
+  padding: 9px 16px;
+}
+
+/* ─── Field Schema Settings ──────────────────────────────────────────────────── */
+.fs-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-card-2);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+}
+
+.fs-icon {
+  font-size: 1.2rem;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.fs-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fs-label {
+  font-size: 0.9rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fs-type {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fs-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.fs-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: var(--font);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition), border-color var(--transition);
+}
+
+.fs-btn:hover:not([disabled]) { color: var(--text); border-color: var(--accent); }
+.fs-btn[disabled]              { opacity: 0.3; cursor: default; }
+.fs-btn-del:hover:not([disabled]) { color: var(--danger); border-color: var(--danger); }
+
+/* ─── Field Editor Modal ─────────────────────────────────────────────────────── */
+.field-editor-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 4px;
+}
+
+.field-editor-icon-wrap {
+  width: 64px;
+  flex-shrink: 0;
+}
+
+.field-editor-icon-input {
+  text-align: center;
+  font-size: 1.4rem;
+  padding: 8px !important;
+}
+
+.field-editor-suggestion {
+  font-size: 0.78rem;
+  color: var(--accent);
+  min-height: 1.2em;
+  margin-top: 4px;
+}
+
+/* ─── Print / PDF styles ─────────────────────────────────────────────────────── */
+#print-view {
+  display: none;
+}
+
+@media print {
+  /* Hide every direct child of body except the print view */
+  body > *:not(#print-view) {
+    display: none !important;
+  }
+
+  #print-view {
+    display: block;
+    font-family: Georgia, serif;
+    color: #111;
+    padding: 20px 28px;
+    margin: 0;
+    font-size: 10pt;
+    line-height: 1.5;
+  }
+
+  .pv-header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid #e8a855;
+  }
+
+  .pv-title {
+    font-size: 20pt;
+    font-weight: 700;
+    color: #111;
+    margin-bottom: 4px;
+  }
+
+  .pv-date {
+    font-size: 8pt;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 3px;
+  }
+
+  .pv-greeting {
+    font-size: 10pt;
+    color: #444;
+    font-style: italic;
+  }
+
+  .pv-empty {
+    color: #666;
+    font-style: italic;
+    margin-top: 20px;
+  }
+
+  .pv-section {
+    margin-bottom: 14px;
+    page-break-inside: avoid;
+  }
+
+  .pv-label {
+    font-size: 7.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: #777;
+    margin-bottom: 5px;
+  }
+
+  .pv-question {
+    font-size: 9pt;
+    color: #444;
+    font-style: italic;
+    margin-bottom: 5px;
+  }
+
+  .pv-value {
+    font-size: 10pt;
+    color: #111;
+    line-height: 1.6;
+  }
+
+  .pv-list-item {
+    font-size: 10pt;
+    color: #111;
+    margin-bottom: 3px;
+  }
+
+  .pv-list-item span {
+    color: #c08030;
+    font-weight: 700;
+  }
+
+  .pv-lines {
+    margin-top: 2px;
+  }
+
+  .pv-line {
+    border-bottom: 1px solid #ccc;
+    height: 22pt;
+    margin-bottom: 2px;
+  }
+}

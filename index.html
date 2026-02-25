@@ -73,6 +73,7 @@
     <header class="page-header">
       <div class="date-display" id="today-date"></div>
       <h1 class="app-title">Sunrise</h1>
+      <p class="greeting" id="greeting"></p>
     </header>
 
     <!-- Install Banner (shown when PWA install is available) -->
@@ -94,86 +95,18 @@
       <p id="quote-author" class="quote-author"></p>
     </section>
 
-    <!-- Journal Form -->
+    <!-- Journal Form — sections are rendered dynamically from the field schema -->
     <form id="journal-form" novalidate>
 
-      <section class="card">
-        <h2 class="section-title">
-          <span class="section-icon">🫧</span> What are you feeling right now?
-        </h2>
-        <textarea class="field field-wrap" name="feeling" placeholder="Right now I'm feeling…" autocomplete="off" rows="1"></textarea>
-      </section>
-
-      <section class="card">
-        <h2 class="section-title">
-          <span class="section-icon">🌿</span> Gratitude
-        </h2>
-        <p class="section-hint">Three things you are grateful for today</p>
-        <div class="field-group">
-          <textarea class="field field-wrap" name="grateful1" placeholder="I'm grateful for…" autocomplete="off" rows="1"></textarea>
-          <textarea class="field field-wrap" name="grateful2" placeholder="I'm grateful for…" autocomplete="off" rows="1"></textarea>
-          <textarea class="field field-wrap" name="grateful3" placeholder="I'm grateful for…" autocomplete="off" rows="1"></textarea>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2 class="section-title">
-          <span class="section-icon">✨</span> Appreciation
-        </h2>
-        <p class="section-hint">Three things you appreciated recently</p>
-        <div class="field-group">
-          <textarea class="field field-wrap" name="appreciated1" placeholder="I appreciated…" autocomplete="off" rows="1"></textarea>
-          <textarea class="field field-wrap" name="appreciated2" placeholder="I appreciated…" autocomplete="off" rows="1"></textarea>
-          <textarea class="field field-wrap" name="appreciated3" placeholder="I appreciated…" autocomplete="off" rows="1"></textarea>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2 class="section-title">
-          <span class="section-icon">🌅</span> Looking Forward
-        </h2>
-        <p class="section-hint">Three things you're looking forward to</p>
-        <div class="field-group">
-          <textarea class="field field-wrap" name="forward1" placeholder="I'm looking forward to…" autocomplete="off" rows="1"></textarea>
-          <textarea class="field field-wrap" name="forward2" placeholder="I'm looking forward to…" autocomplete="off" rows="1"></textarea>
-          <textarea class="field field-wrap" name="forward3" placeholder="I'm looking forward to…" autocomplete="off" rows="1"></textarea>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2 class="section-title">
-          <span class="section-icon">🎯</span> Intention
-        </h2>
-        <p class="section-hint">One intention for the day</p>
-        <textarea class="field field-wrap" name="intention" placeholder="Today I intend to…" autocomplete="off" rows="1"></textarea>
-      </section>
-
-      <section class="card">
-        <h2 class="section-title">
-          <span class="section-icon">💛</span> You Are Awesome
-        </h2>
-        <p class="section-hint">One reason you are awesome</p>
-        <textarea class="field field-wrap" name="awesome" placeholder="I am awesome because…" autocomplete="off" rows="1"></textarea>
-      </section>
-
-      <section class="card question-card">
-        <div class="question-mark">?</div>
-        <p class="question-label">Reflect on this</p>
-        <p id="daily-question" class="question-text"></p>
-        <textarea class="field field-wrap question-reflection" name="reflection" placeholder="My reflection…" autocomplete="off" rows="1"></textarea>
-      </section>
-
-      <section class="card">
-        <h2 class="section-title">
-          <span class="section-icon">💭</span> On My Mind
-        </h2>
-        <p class="section-hint">Any thoughts, feelings, or reflections</p>
-        <textarea class="field textarea" name="thoughts" placeholder="What's on your mind today…" rows="5"></textarea>
-      </section>
+      <div id="journal-fields"></div>
 
       <div class="submit-area">
         <button type="submit" class="btn-save" id="save-btn">Save Entry</button>
         <p class="save-status" id="save-status"></p>
+        <div class="print-action-row">
+          <button type="button" class="btn-secondary print-btn" id="print-blank-btn">🖨 Blank Template</button>
+          <button type="button" class="btn-secondary print-btn" id="print-filled-btn">🖨 Today's Entry</button>
+        </div>
       </div>
 
     </form>
@@ -201,6 +134,20 @@
     <header class="page-header">
       <h1 class="app-title">Settings</h1>
     </header>
+
+    <section class="card">
+      <h2 class="section-title">Personal</h2>
+      <p class="section-hint">Add your name to personalise the greeting in your journal.</p>
+      <input type="text" id="user-name-input" class="field" placeholder="Your first name…" autocomplete="given-name" style="margin-top:12px;" />
+      <p class="save-status" id="name-status" style="margin-top:8px;"></p>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Journal Fields</h2>
+      <p class="section-hint">Customise the fields in your journal — add, edit, remove or reorder them.</p>
+      <div id="field-schema-list"></div>
+      <button type="button" class="btn-secondary" id="add-field-btn" style="margin-top:12px; width:100%;">+ Add Field</button>
+    </section>
 
     <section class="card">
       <h2 class="section-title">Timezone</h2>
@@ -301,6 +248,44 @@
       <div id="modal-content" class="modal-content"></div>
     </div>
   </div>
+
+  <!-- ─── FIELD EDITOR MODAL ───────────────────────────────── -->
+  <div id="field-editor-modal" class="modal" role="dialog" aria-modal="true" aria-label="Edit field" style="display:none">
+    <div class="modal-backdrop" id="field-editor-backdrop"></div>
+    <div class="modal-sheet">
+      <button class="modal-close" id="field-editor-close" aria-label="Close">✕</button>
+      <div class="modal-content" style="padding-top:8px;">
+        <h2 class="section-title" id="field-editor-title" style="margin-bottom:20px;">Add Field</h2>
+
+        <div class="field-editor-row">
+          <div class="field-editor-icon-wrap">
+            <label class="section-hint" style="margin-bottom:6px; display:block;">Icon</label>
+            <input type="text" id="field-editor-icon" class="field field-editor-icon-input" maxlength="4" />
+          </div>
+          <div style="flex:1; min-width:0;">
+            <label class="section-hint" style="margin-bottom:6px; display:block;">Label</label>
+            <input type="text" id="field-editor-label" class="field" placeholder="Field name…" />
+          </div>
+        </div>
+        <p id="field-editor-suggestion" class="field-editor-suggestion"></p>
+
+        <label class="section-hint" style="margin-bottom:6px; display:block; margin-top:16px;">Type</label>
+        <select id="field-editor-type" class="field" style="cursor:pointer; margin-bottom:16px;">
+          <option value="text">Single answer</option>
+          <option value="list">3-item list (e.g. Gratitude)</option>
+          <option value="textarea">Long text (free write)</option>
+        </select>
+
+        <label class="section-hint" style="margin-bottom:6px; display:block;">Subtitle <span style="color:var(--text-hint)">(optional)</span></label>
+        <input type="text" id="field-editor-hint" class="field" placeholder="Short description under the title…" />
+
+        <button type="button" class="btn-save" id="field-editor-save" style="margin-top:24px;">Save Field</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── PRINT VIEW ────────────────────────────────────────── -->
+  <div id="print-view" aria-hidden="true"></div>
 
   <script src="supabase.min.js"></script>
   <script src="quotes.js"></script>
