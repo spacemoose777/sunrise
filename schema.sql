@@ -17,8 +17,12 @@ CREATE TABLE entries (
 CREATE TABLE user_profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   encryption_salt TEXT NOT NULL,
+  settings JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Migration: run this if you already created user_profiles without the settings column
+-- ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS settings JSONB DEFAULT '{}'::jsonb;
 
 -- Row Level Security: users can only access their own data
 ALTER TABLE entries ENABLE ROW LEVEL SECURITY;

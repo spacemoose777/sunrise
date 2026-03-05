@@ -37,6 +37,7 @@ function getFieldSchema() {
 
 function saveFieldSchema(schema) {
   localStorage.setItem(FIELD_SCHEMA_KEY, JSON.stringify(schema));
+  saveSettingsToCloud();
 }
 
 // ─── Timezone ────────────────────────────────────────────────────────────────
@@ -103,6 +104,7 @@ function getCustomQuestions() {
 
 function saveCustomQuestions(questions) {
   localStorage.setItem(CUSTOM_QUESTIONS_KEY, JSON.stringify(questions));
+  saveSettingsToCloud();
 }
 
 function getDailyQuestion() {
@@ -533,6 +535,7 @@ function initSettings() {
   nameInput.addEventListener('input', () => {
     setUserName(nameInput.value);
     updateGreeting();
+    saveSettingsToCloud();
     nameStatus.textContent = '✓ Saved';
     nameStatus.classList.add('visible');
     setTimeout(() => nameStatus.classList.remove('visible'), 2000);
@@ -608,6 +611,7 @@ function initSettings() {
   tzSelect.value = getTimezone();
   tzSelect.addEventListener('change', () => {
     setTimezone(tzSelect.value);
+    saveSettingsToCloud();
     tzStatus.textContent = `✓ Timezone set to ${tzSelect.value}`;
     tzStatus.classList.add('visible');
     setTimeout(() => tzStatus.classList.remove('visible'), 3000);
@@ -1044,7 +1048,38 @@ authForm.addEventListener('submit', async (e) => {
   }
 });
 
+// ─── Cloud Settings Sync ──────────────────────────────────────────────────────
+
+async function loadAndApplyCloudSettings() {
+  try {
+    const s = await SunriseDB.loadSettings();
+    // Cloud wins for any field it already has a value for
+    if (s.user_name        !== undefined) localStorage.setItem(USER_NAME_KEY,        s.user_name);
+    if (s.custom_questions !== undefined) localStorage.setItem(CUSTOM_QUESTIONS_KEY, JSON.stringify(s.custom_questions));
+    if (s.field_schema     !== undefined) localStorage.setItem(FIELD_SCHEMA_KEY,     JSON.stringify(s.field_schema));
+    if (s.timezone         !== undefined) localStorage.setItem(TZ_KEY,               s.timezone);
+
+    // Push the merged local state back up so any settings that only existed
+    // locally (set before cloud sync was added) are uploaded now.
+    saveSettingsToCloud();
+  } catch (err) {
+    console.warn('Could not load cloud settings:', err);
+  }
+}
+
+function saveSettingsToCloud() {
+  SunriseDB.saveSettings({
+    user_name:        getUserName(),
+    custom_questions: getCustomQuestions(),
+    field_schema:     getFieldSchema(),
+    timezone:         getTimezone(),
+  }).catch(err => console.warn('Could not save settings to cloud:', err));
+}
+
 async function postLoginInit() {
+  // Load cloud settings before rendering so the UI picks them up
+  await loadAndApplyCloudSettings();
+
   // Check for localStorage migration
   const local = SunriseDB.hasLocalStorageEntries();
   if (local.found && local.count > 0) {

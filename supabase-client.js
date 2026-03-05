@@ -164,6 +164,25 @@ const SunriseDB = (() => {
     _entriesCache = {};
   }
 
+  // ── Settings (user preferences synced to cloud) ──
+
+  async function loadSettings() {
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('settings')
+      .eq('id', _user.id)
+      .single();
+    return data?.settings || {};
+  }
+
+  async function saveSettings(settings) {
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({ settings })
+      .eq('id', _user.id);
+    if (error) throw error;
+  }
+
   // ── Migration from localStorage ──
 
   function hasLocalStorageEntries() {
@@ -197,6 +216,7 @@ const SunriseDB = (() => {
     signIn, signOut, getSession, getUser, getCryptoKey,
     unlockWithPassword,
     getEntries, saveEntry, appendEntry, deleteAllEntries,
+    loadSettings, saveSettings,
     hasLocalStorageEntries, importLocalStorageEntries
   };
 
