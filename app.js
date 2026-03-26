@@ -6,6 +6,8 @@ const TZ_KEY               = 'sunrise_timezone';
 const CUSTOM_QUESTIONS_KEY = 'sunrise_custom_questions';
 const FIELD_SCHEMA_KEY     = 'sunrise_field_schema';
 const USER_NAME_KEY        = 'sunrise_user_name';
+const HABIT_SCHEMA_KEY     = 'sunrise_habit_schema';
+const CUSTOM_MOODS_KEY     = 'sunrise_custom_moods';
 
 // ─── Default field schema ─────────────────────────────────────────────────────
 
@@ -28,6 +30,31 @@ const DEFAULT_FIELD_SCHEMA = [
     placeholder: "What's on your mind today…",  hint: 'Any thoughts, feelings, or reflections' },
 ];
 
+const PRESET_MOODS = [
+  { label: 'Happy',       emoji: '😊' },
+  { label: 'Calm',        emoji: '😌' },
+  { label: 'Content',     emoji: '🙂' },
+  { label: 'Energised',   emoji: '⚡' },
+  { label: 'Grateful',    emoji: '🙏' },
+  { label: 'Focused',     emoji: '🎯' },
+  { label: 'Tired',       emoji: '😴' },
+  { label: 'Anxious',     emoji: '😰' },
+  { label: 'Stressed',    emoji: '😤' },
+  { label: 'Irritated',   emoji: '😠' },
+  { label: 'Sad',         emoji: '😢' },
+  { label: 'Overwhelmed', emoji: '😵' },
+];
+
+const DEFAULT_HABIT_SCHEMA = [
+  { id: 'rest',        label: 'Rest',        icon: '💤' },
+  { id: 'stretching',  label: 'Stretching',  icon: '🧘' },
+  { id: 'sunlight',    label: 'Sunlight',    icon: '☀️' },
+  { id: 'connection',  label: 'Connection',  icon: '👥' },
+  { id: 'exercise',    label: 'Exercise',    icon: '🏃' },
+  { id: 'journaling',  label: 'Journaling',  icon: '📝' },
+  { id: 'water',       label: 'Water',       icon: '💧' },
+];
+
 // ─── Field Schema ─────────────────────────────────────────────────────────────
 
 function getFieldSchema() {
@@ -37,6 +64,30 @@ function getFieldSchema() {
 
 function saveFieldSchema(schema) {
   localStorage.setItem(FIELD_SCHEMA_KEY, JSON.stringify(schema));
+  saveSettingsToCloud();
+}
+
+// ─── Habit Schema ──────────────────────────────────────────────────────────────
+
+function getHabitSchema() {
+  try { return JSON.parse(localStorage.getItem(HABIT_SCHEMA_KEY)) || DEFAULT_HABIT_SCHEMA; }
+  catch { return DEFAULT_HABIT_SCHEMA; }
+}
+
+function saveHabitSchema(schema) {
+  localStorage.setItem(HABIT_SCHEMA_KEY, JSON.stringify(schema));
+  saveSettingsToCloud();
+}
+
+// ─── Custom Moods ──────────────────────────────────────────────────────────────
+
+function getCustomMoods() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_MOODS_KEY)) || []; }
+  catch { return []; }
+}
+
+function saveCustomMoods(moods) {
+  localStorage.setItem(CUSTOM_MOODS_KEY, JSON.stringify(moods));
   saveSettingsToCloud();
 }
 
@@ -146,6 +197,8 @@ function showView(name) {
 
   if (name === 'history')  renderHistory();
   if (name === 'settings') initSettings();
+  if (name === 'mood')    initMood();
+  if (name === 'habits')  initHabits();
 }
 
 navBtns.forEach(btn => {
@@ -416,7 +469,9 @@ function getEntryPreview(entry) {
 
 function renderHistory() {
   const entries  = getEntries();
-  const keys     = Object.keys(entries).sort((a, b) => b.localeCompare(a));
+  const keys     = Object.keys(entries)
+    .filter(k => !k.startsWith('mood:') && !k.startsWith('habits:'))
+    .sort((a, b) => b.localeCompare(a));
   const list     = document.getElementById('history-list');
   const empty    = document.getElementById('history-empty');
 
@@ -544,6 +599,24 @@ function initSettings() {
   // ── Journal Fields ───────────────────────────────────────────────────────
   renderFieldSettings();
   document.getElementById('add-field-btn').addEventListener('click', () => openFieldEditor('add', -1));
+
+  // ── Daily Habits ─────────────────────────────────────────────────────────
+  renderHabitSettings();
+  document.getElementById('add-habit-btn').addEventListener('click', () => {
+    const icon  = document.getElementById('new-habit-icon').value.trim()  || '✅';
+    const label = document.getElementById('new-habit-label').value.trim();
+    if (!label) { document.getElementById('new-habit-label').focus(); return; }
+    const s = getHabitSchema();
+    const id = label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'habit';
+    s.push({ id: generateFieldId(id, s), label, icon });
+    saveHabitSchema(s);
+    renderHabitSettings();
+    document.getElementById('new-habit-icon').value  = '';
+    document.getElementById('new-habit-label').value = '';
+  });
+
+  // ── Custom Moods ─────────────────────────────────────────────────────────
+  renderCustomMoodsSettings();
 
   // Field editor modal wiring (one-time)
   document.getElementById('field-editor-close').addEventListener('click', closeFieldEditor);
@@ -1058,6 +1131,8 @@ async function loadAndApplyCloudSettings() {
     if (s.custom_questions !== undefined) localStorage.setItem(CUSTOM_QUESTIONS_KEY, JSON.stringify(s.custom_questions));
     if (s.field_schema     !== undefined) localStorage.setItem(FIELD_SCHEMA_KEY,     JSON.stringify(s.field_schema));
     if (s.timezone         !== undefined) localStorage.setItem(TZ_KEY,               s.timezone);
+    if (s.habit_schema     !== undefined) localStorage.setItem(HABIT_SCHEMA_KEY,     JSON.stringify(s.habit_schema));
+    if (s.custom_moods     !== undefined) localStorage.setItem(CUSTOM_MOODS_KEY,     JSON.stringify(s.custom_moods));
 
     // Push the merged local state back up so any settings that only existed
     // locally (set before cloud sync was added) are uploaded now.
@@ -1073,6 +1148,8 @@ function saveSettingsToCloud() {
     custom_questions: getCustomQuestions(),
     field_schema:     getFieldSchema(),
     timezone:         getTimezone(),
+    habit_schema:     getHabitSchema(),
+    custom_moods:     getCustomMoods(),
   }).catch(err => console.warn('Could not save settings to cloud:', err));
 }
 
@@ -1126,6 +1203,315 @@ document.getElementById('migration-import').addEventListener('click', async () =
 document.getElementById('migration-skip').addEventListener('click', () => {
   document.getElementById('migration-prompt').style.display = 'none';
   localStorage.removeItem(STORAGE_KEY);
+});
+
+// ─── Mood View ────────────────────────────────────────────────────────────────
+
+let _selectedMood = null;
+
+function moodDateKey(dateKey) { return 'mood:'   + dateKey; }
+function habitsDateKey(dateKey) { return 'habits:' + dateKey; }
+
+function getTodayMoodLogs() {
+  const all = SunriseDB.getEntries();
+  const raw = all[moodDateKey(todayKey())];
+  return Array.isArray(raw) ? raw : (raw ? [raw] : []);
+}
+
+function getTodayHabitsData() {
+  const all = SunriseDB.getEntries();
+  const raw = all[habitsDateKey(todayKey())];
+  if (!raw) return {};
+  // fetchAllEntries wraps plain objects in an array; unwrap
+  const obj = Array.isArray(raw) ? raw[0] : raw;
+  return (obj && typeof obj === 'object') ? obj : {};
+}
+
+function initMood() {
+  document.getElementById('mood-date').textContent = formatDisplayDate(todayKey());
+  _selectedMood = null;
+  document.getElementById('mood-custom-input').value = '';
+  document.getElementById('mood-activity-input').value = '';
+  renderMoodChips();
+  renderTodayMoodLogs();
+}
+
+function renderMoodChips() {
+  const container = document.getElementById('mood-chips');
+  if (!container) return;
+  const customMoods = getCustomMoods();
+  const allMoods = [
+    ...PRESET_MOODS,
+    ...customMoods.map(label => ({ label, emoji: '💭', custom: true }))
+  ];
+
+  container.innerHTML = allMoods.map(m =>
+    `<button class="mood-chip${_selectedMood === m.label ? ' selected' : ''}" data-mood="${escapeHTML(m.label)}">${m.emoji} ${escapeHTML(m.label)}</button>`
+  ).join('');
+
+  container.querySelectorAll('.mood-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const mood = chip.dataset.mood;
+      if (_selectedMood === mood) {
+        _selectedMood = null;
+      } else {
+        _selectedMood = mood;
+        document.getElementById('mood-custom-input').value = '';
+      }
+      renderMoodChips();
+    });
+  });
+}
+
+async function handleMoodLog() {
+  const customText = document.getElementById('mood-custom-input').value.trim();
+  const mood = _selectedMood || customText;
+  if (!mood) return;
+
+  const activity = document.getElementById('mood-activity-input').value.trim();
+  const btn    = document.getElementById('mood-log-btn');
+  const status = document.getElementById('mood-save-status');
+  btn.disabled = true;
+
+  try {
+    // Save custom mood for future chip use
+    if (!PRESET_MOODS.find(m => m.label === mood)) {
+      const custom = getCustomMoods();
+      if (!custom.includes(mood)) {
+        custom.push(mood);
+        saveCustomMoods(custom);
+        if (document.getElementById('view-settings').classList.contains('active')) {
+          renderCustomMoodsSettings();
+        }
+      }
+    }
+
+    await SunriseDB.appendEntry(moodDateKey(todayKey()), { mood, activity, loggedAt: new Date().toISOString() });
+
+    status.textContent = '✓ Mood logged';
+    status.classList.add('visible');
+    setTimeout(() => status.classList.remove('visible'), 2000);
+
+    _selectedMood = null;
+    document.getElementById('mood-custom-input').value = '';
+    document.getElementById('mood-activity-input').value = '';
+    renderMoodChips();
+    renderTodayMoodLogs();
+  } catch (err) {
+    status.textContent = 'Error saving. Please try again.';
+    status.classList.add('visible');
+    console.error('Mood log failed:', err);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderTodayMoodLogs() {
+  const logs    = getTodayMoodLogs();
+  const section = document.getElementById('mood-today-section');
+  const list    = document.getElementById('mood-today-list');
+  if (!section || !list) return;
+
+  if (logs.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = '';
+  list.innerHTML = logs.slice().reverse().map(m => {
+    const time = m.loggedAt
+      ? new Date(m.loggedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+      : '';
+    return `
+      <div class="mood-log-item">
+        <div class="mood-log-main">
+          <span class="mood-log-label">${escapeHTML(m.mood)}</span>
+          ${m.activity ? `<span class="mood-log-activity">${escapeHTML(m.activity)}</span>` : ''}
+        </div>
+        ${time ? `<span class="mood-log-time">${time}</span>` : ''}
+      </div>`;
+  }).join('');
+}
+
+// ─── Habits View ──────────────────────────────────────────────────────────────
+
+function initHabits() {
+  document.getElementById('habits-date').textContent = formatDisplayDate(todayKey());
+  renderHabits();
+}
+
+function renderHabits() {
+  const schema  = getHabitSchema();
+  const list    = document.getElementById('habits-list');
+  const empty   = document.getElementById('habits-empty');
+  const progress = document.getElementById('habits-progress');
+  if (!list) return;
+
+  if (schema.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    progress.textContent = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const data      = getTodayHabitsData();
+  const doneCount = schema.filter(h => data[h.id]?.done).length;
+
+  progress.textContent = doneCount === schema.length
+    ? 'All done! 🌟'
+    : `${doneCount} / ${schema.length} done`;
+
+  list.innerHTML = schema.map(habit => {
+    const hd = data[habit.id] || { done: false, note: '' };
+    return `
+      <div class="habit-item${hd.done ? ' done' : ''}" data-id="${escapeHTML(habit.id)}">
+        <label class="habit-check-wrap" aria-label="${escapeHTML(habit.label)}">
+          <input type="checkbox" class="habit-checkbox" data-id="${escapeHTML(habit.id)}" ${hd.done ? 'checked' : ''} />
+          <span class="habit-check-custom"></span>
+        </label>
+        <div class="habit-body">
+          <div class="habit-header-row">
+            <span class="habit-icon">${escapeHTML(habit.icon)}</span>
+            <span class="habit-label-text${hd.done ? ' done' : ''}">${escapeHTML(habit.label)}</span>
+            <button class="habit-note-btn${hd.note ? ' has-note' : ''}" data-id="${escapeHTML(habit.id)}" aria-label="Toggle note">${hd.note ? '📝' : '+ note'}</button>
+          </div>
+          <div class="habit-note-wrap${hd.note ? ' open' : ''}" data-id="${escapeHTML(habit.id)}">
+            <textarea class="field field-wrap habit-note-input" data-id="${escapeHTML(habit.id)}" placeholder="Add a note…" rows="1" autocomplete="off">${escapeHTML(hd.note || '')}</textarea>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  list.querySelectorAll('.habit-checkbox').forEach(cb => {
+    cb.addEventListener('change', () => toggleHabit(cb.dataset.id, cb.checked));
+  });
+
+  list.querySelectorAll('.habit-note-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const wrap = list.querySelector(`.habit-note-wrap[data-id="${btn.dataset.id}"]`);
+      wrap.classList.toggle('open');
+      if (wrap.classList.contains('open')) {
+        const ta = wrap.querySelector('textarea');
+        ta.focus();
+        autoResize(ta);
+      }
+    });
+  });
+
+  list.querySelectorAll('.habit-note-input').forEach(ta => {
+    autoResize(ta);
+    ta.addEventListener('input', () => autoResize(ta));
+    ta.addEventListener('blur',  () => saveHabitNote(ta.dataset.id, ta.value.trim()));
+  });
+}
+
+async function toggleHabit(habitId, done) {
+  const data = getTodayHabitsData();
+  if (!data[habitId]) data[habitId] = {};
+  data[habitId].done = done;
+  try {
+    await SunriseDB.saveEntry(habitsDateKey(todayKey()), data);
+    renderHabits();
+  } catch (err) {
+    console.error('Failed to save habit:', err);
+  }
+}
+
+async function saveHabitNote(habitId, note) {
+  const data = getTodayHabitsData();
+  if (!data[habitId]) data[habitId] = {};
+  if (data[habitId].note === note) return; // no change
+  data[habitId].note = note;
+  try {
+    await SunriseDB.saveEntry(habitsDateKey(todayKey()), data);
+    // Update the note button indicator without full re-render
+    const btn = document.querySelector(`.habit-note-btn[data-id="${habitId}"]`);
+    if (btn) btn.textContent = note ? '📝' : '+ note';
+  } catch (err) {
+    console.error('Failed to save habit note:', err);
+  }
+}
+
+// ─── Habit Settings ───────────────────────────────────────────────────────────
+
+function renderHabitSettings() {
+  const list   = document.getElementById('habit-schema-list');
+  if (!list) return;
+  const schema = getHabitSchema();
+
+  if (!schema.length) {
+    list.innerHTML = '<p class="section-hint" style="margin-bottom:8px;">No habits yet. Add one below.</p>';
+    return;
+  }
+
+  list.innerHTML = schema.map((h, i) => `
+    <div class="fs-item">
+      <span class="fs-icon">${escapeHTML(h.icon)}</span>
+      <div class="fs-info">
+        <span class="fs-label">${escapeHTML(h.label)}</span>
+      </div>
+      <div class="fs-actions">
+        <button class="fs-btn" data-haction="up"   data-hi="${i}" aria-label="Move up"   ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button class="fs-btn" data-haction="down" data-hi="${i}" aria-label="Move down" ${i === schema.length - 1 ? 'disabled' : ''}>↓</button>
+        <button class="fs-btn fs-btn-del" data-haction="del" data-hi="${i}" aria-label="Delete">✕</button>
+      </div>
+    </div>`).join('');
+
+  list.querySelectorAll('[data-haction]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx    = parseInt(btn.dataset.hi, 10);
+      const action = btn.dataset.haction;
+      const s      = getHabitSchema();
+      if (action === 'up' && idx > 0) {
+        [s[idx - 1], s[idx]] = [s[idx], s[idx - 1]];
+        saveHabitSchema(s); renderHabitSettings();
+      } else if (action === 'down' && idx < s.length - 1) {
+        [s[idx], s[idx + 1]] = [s[idx + 1], s[idx]];
+        saveHabitSchema(s); renderHabitSettings();
+      } else if (action === 'del') {
+        if (confirm(`Remove "${s[idx].label}" from your habits?`)) {
+          s.splice(idx, 1);
+          saveHabitSchema(s); renderHabitSettings();
+        }
+      }
+    });
+  });
+}
+
+function renderCustomMoodsSettings() {
+  const list = document.getElementById('custom-moods-settings-list');
+  if (!list) return;
+  const moods = getCustomMoods();
+
+  if (moods.length === 0) {
+    list.innerHTML = '<p class="section-hint" style="margin-bottom:0">No custom moods saved yet.</p>';
+    return;
+  }
+
+  list.innerHTML = moods.map((mood, i) => `
+    <div class="custom-question-item">
+      <span class="custom-question-text">💭 ${escapeHTML(mood)}</span>
+      <button class="custom-question-delete" data-index="${i}" aria-label="Remove mood">✕</button>
+    </div>`).join('');
+
+  list.querySelectorAll('.custom-question-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.index, 10);
+      const m   = getCustomMoods();
+      m.splice(idx, 1);
+      saveCustomMoods(m);
+      renderCustomMoodsSettings();
+    });
+  });
+}
+
+// ─── Mood button wiring (static, once at load) ────────────────────────────────
+
+document.getElementById('mood-log-btn').addEventListener('click', handleMoodLog);
+document.getElementById('mood-custom-input').addEventListener('input', () => {
+  _selectedMood = null;
+  document.querySelectorAll('#mood-chips .mood-chip').forEach(c => c.classList.remove('selected'));
 });
 
 // ─── Boot ─────────────────────────────────────────────────────────────────

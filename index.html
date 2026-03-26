@@ -57,6 +57,14 @@
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
       <span>Today</span>
     </button>
+    <button class="nav-btn" data-view="mood" aria-label="Mood">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+      <span>Mood</span>
+    </button>
+    <button class="nav-btn" data-view="habits" aria-label="Habits">
+      <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <span>Habits</span>
+    </button>
     <button class="nav-btn" data-view="history" aria-label="History">
       <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       <span>History</span>
@@ -113,6 +121,48 @@
 
   </main>
 
+  <!-- ─── MOOD VIEW ─────────────────────────────────────────────── -->
+  <main id="view-mood" class="view">
+
+    <header class="page-header">
+      <div class="date-display" id="mood-date"></div>
+      <h1 class="app-title">Mood</h1>
+    </header>
+
+    <section class="card">
+      <h2 class="section-title"><span class="section-icon">🎭</span> How are you feeling?</h2>
+      <div class="mood-chips" id="mood-chips"></div>
+      <input type="text" class="field" id="mood-custom-input" placeholder="Or type your own mood…" autocomplete="off" style="margin-top:10px;" />
+      <p class="section-hint" style="margin-top:14px; margin-bottom:8px;">What are you doing right now? <span style="color:var(--text-hint)">(optional)</span></p>
+      <input type="text" class="field" id="mood-activity-input" placeholder="e.g. working, relaxing, out for a walk…" autocomplete="off" />
+      <button class="btn-save" id="mood-log-btn" style="margin-top:16px; max-width:100%;">Log Mood</button>
+      <p class="save-status" id="mood-save-status"></p>
+    </section>
+
+    <section class="card" id="mood-today-section" style="display:none">
+      <h2 class="section-title"><span class="section-icon">📋</span> Today's Moods</h2>
+      <div id="mood-today-list"></div>
+    </section>
+
+  </main>
+
+  <!-- ─── HABITS VIEW ───────────────────────────────────────────── -->
+  <main id="view-habits" class="view">
+
+    <header class="page-header">
+      <div class="date-display" id="habits-date"></div>
+      <h1 class="app-title">Habits</h1>
+      <p class="habits-progress" id="habits-progress"></p>
+    </header>
+
+    <div id="habits-list"></div>
+
+    <div id="habits-empty" class="empty-state" style="display:none">
+      <p>No habits set up yet.<br/>Add some in <strong>Settings</strong> ⚙️</p>
+    </div>
+
+  </main>
+
   <!-- ─── HISTORY VIEW ──────────────────────────────────────── -->
   <main id="view-history" class="view">
 
@@ -147,6 +197,17 @@
       <p class="section-hint">Customise the fields in your journal — add, edit, remove or reorder them.</p>
       <div id="field-schema-list"></div>
       <button type="button" class="btn-secondary" id="add-field-btn" style="margin-top:12px; width:100%;">+ Add Field</button>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Daily Habits</h2>
+      <p class="section-hint">The habits you want to track each day. Tick them off in the Habits tab.</p>
+      <div id="habit-schema-list"></div>
+      <div class="habit-add-row">
+        <input type="text" class="field" id="new-habit-icon" maxlength="4" placeholder="🏃" style="width:54px; flex-shrink:0; text-align:center; font-size:1.2rem; padding:8px;" />
+        <input type="text" class="field" id="new-habit-label" placeholder="Habit name…" autocomplete="off" />
+        <button type="button" class="btn-secondary" id="add-habit-btn">Add</button>
+      </div>
     </section>
 
     <section class="card">
@@ -192,6 +253,12 @@
         <textarea class="field field-wrap" id="new-question-input" placeholder="Add your own question to the rotation…" rows="1" autocomplete="off"></textarea>
         <button type="button" class="btn-secondary" id="add-question-btn">Add</button>
       </div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Saved Moods</h2>
+      <p class="section-hint">Custom moods you've logged — they'll appear as chips for quick selection.</p>
+      <div id="custom-moods-settings-list"></div>
     </section>
 
     <section class="card">

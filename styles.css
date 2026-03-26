@@ -258,10 +258,11 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  padding: 6px 20px;
+  padding: 6px 10px;
   border-radius: var(--radius-sm);
   transition: color var(--transition);
   font-family: var(--font);
+  flex: 1;
 }
 
 .nav-btn svg {
@@ -1049,3 +1050,208 @@ body.auth-locked .view {
     margin-bottom: 2px;
   }
 }
+
+/* ─── Mood Chips ──────────────────────────────────────────────────────────────── */
+.mood-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mood-chip {
+  background: var(--bg-card-2);
+  border: 1.5px solid var(--border);
+  border-radius: 50px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--text);
+  font-family: var(--font);
+  transition: border-color var(--transition), background var(--transition), color var(--transition);
+  line-height: 1.4;
+}
+
+.mood-chip:hover {
+  border-color: var(--accent);
+}
+
+.mood-chip.selected {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ─── Mood Log Items ─────────────────────────────────────────────────────────── */
+.mood-log-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-card-2);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  border-left: 3px solid var(--accent);
+}
+
+.mood-log-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mood-log-label {
+  font-size: 0.93rem;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.mood-log-activity {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.mood-log-time {
+  font-size: 0.75rem;
+  color: var(--text-hint);
+  flex-shrink: 0;
+}
+
+/* ─── Habits View ────────────────────────────────────────────────────────────── */
+.habits-progress {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.habit-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  transition: border-color var(--transition);
+}
+
+.habit-item.done {
+  border-color: var(--success);
+  opacity: 0.8;
+}
+
+.habit-check-wrap {
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+  margin-top: 2px;
+}
+
+.habit-check-wrap input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.habit-check-custom {
+  display: block;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-card-2);
+  transition: all var(--transition);
+  position: relative;
+}
+
+.habit-check-wrap input:checked + .habit-check-custom {
+  background: var(--success);
+  border-color: var(--success);
+}
+
+.habit-check-wrap input:checked + .habit-check-custom::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 3px;
+  width: 6px;
+  height: 10px;
+  border: 2px solid #0f1117;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+.habit-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.habit-header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.habit-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.habit-label-text {
+  flex: 1;
+  font-size: 0.95rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.habit-label-text.done {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.habit-note-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-hint);
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: color var(--transition), border-color var(--transition);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.habit-note-btn:hover,
+.habit-note-btn.has-note {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.habit-note-wrap {
+  display: none;
+  margin-top: 10px;
+}
+
+.habit-note-wrap.open {
+  display: block;
+}
+
+/* ─── Habit Add Row (Settings) ───────────────────────────────────────────────── */
+.habit-add-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+  flex-wrap: nowrap;
+}
+
+.habit-add-row .field { flex: 1; min-width: 0; }
+.habit-add-row .btn-secondary { flex-shrink: 0; }
