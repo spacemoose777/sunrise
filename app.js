@@ -1207,7 +1207,7 @@ document.getElementById('migration-skip').addEventListener('click', () => {
 
 // ─── Mood View ────────────────────────────────────────────────────────────────
 
-let _selectedMood = null;
+let _selectedMoods = new Set();
 
 function moodDateKey(dateKey) { return 'mood:'   + dateKey; }
 function habitsDateKey(dateKey) { return 'habits:' + dateKey; }
@@ -1229,7 +1229,7 @@ function getTodayHabitsData() {
 
 function initMood() {
   document.getElementById('mood-date').textContent = formatDisplayDate(todayKey());
-  _selectedMood = null;
+  _selectedMoods = new Set();
   document.getElementById('mood-custom-input').value = '';
   document.getElementById('mood-activity-input').value = '';
   renderMoodChips();
@@ -1246,27 +1246,28 @@ function renderMoodChips() {
   ];
 
   container.innerHTML = allMoods.map(m =>
-    `<button class="mood-chip${_selectedMood === m.label ? ' selected' : ''}" data-mood="${escapeHTML(m.label)}">${m.emoji} ${escapeHTML(m.label)}</button>`
+    `<button class="mood-chip${_selectedMoods.has(m.label) ? ' selected' : ''}" data-mood="${escapeHTML(m.label)}">${m.emoji} ${escapeHTML(m.label)}</button>`
   ).join('');
 
   container.querySelectorAll('.mood-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       const mood = chip.dataset.mood;
-      if (_selectedMood === mood) {
-        _selectedMood = null;
+      if (_selectedMoods.has(mood)) {
+        _selectedMoods.delete(mood);
       } else {
-        _selectedMood = mood;
-        document.getElementById('mood-custom-input').value = '';
+        _selectedMoods.add(mood);
       }
-      renderMoodChips();
+      chip.classList.toggle('selected', _selectedMoods.has(mood));
     });
   });
 }
 
 async function handleMoodLog() {
   const customText = document.getElementById('mood-custom-input').value.trim();
-  const mood = _selectedMood || customText;
-  if (!mood) return;
+  // Combine selected chips + any typed custom mood (if not already selected)
+  const moods = [..._selectedMoods];
+  if (customText && !_selectedMoods.has(customText)) moods.push(customText);
+  if (moods.length === 0) return;
 
   const activity = document.getElementById('mood-activity-input').value.trim();
   const btn    = document.getElementById('mood-log-btn');
@@ -1274,25 +1275,30 @@ async function handleMoodLog() {
   btn.disabled = true;
 
   try {
-    // Save custom mood for future chip use
-    if (!PRESET_MOODS.find(m => m.label === mood)) {
-      const custom = getCustomMoods();
-      if (!custom.includes(mood)) {
-        custom.push(mood);
-        saveCustomMoods(custom);
-        if (document.getElementById('view-settings').classList.contains('active')) {
-          renderCustomMoodsSettings();
-        }
+    // Save any new custom moods for future chip use
+    const custom = getCustomMoods();
+    let customChanged = false;
+    for (const m of moods) {
+      if (!PRESET_MOODS.find(p => p.label === m) && !custom.includes(m)) {
+        custom.push(m);
+        customChanged = true;
+      }
+    }
+    if (customChanged) {
+      saveCustomMoods(custom);
+      if (document.getElementById('view-settings').classList.contains('active')) {
+        renderCustomMoodsSettings();
       }
     }
 
-    await SunriseDB.appendEntry(moodDateKey(todayKey()), { mood, activity, loggedAt: new Date().toISOString() });
+    // Store mood as array (single-item array if only one)
+    await SunriseDB.appendEntry(moodDateKey(todayKey()), { mood: moods, activity, loggedAt: new Date().toISOString() });
 
     status.textContent = '✓ Mood logged';
     status.classList.add('visible');
     setTimeout(() => status.classList.remove('visible'), 2000);
 
-    _selectedMood = null;
+    _selectedMoods = new Set();
     document.getElementById('mood-custom-input').value = '';
     document.getElementById('mood-activity-input').value = '';
     renderMoodChips();
@@ -1322,10 +1328,12 @@ function renderTodayMoodLogs() {
     const time = m.loggedAt
       ? new Date(m.loggedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
       : '';
+    const moodArr = Array.isArray(m.mood) ? m.mood : [m.mood];
+    const moodLabel = moodArr.map(x => escapeHTML(x)).join(', ');
     return `
       <div class="mood-log-item">
         <div class="mood-log-main">
-          <span class="mood-log-label">${escapeHTML(m.mood)}</span>
+          <span class="mood-log-label">${moodLabel}</span>
           ${m.activity ? `<span class="mood-log-activity">${escapeHTML(m.activity)}</span>` : ''}
         </div>
         ${time ? `<span class="mood-log-time">${time}</span>` : ''}
@@ -1509,10 +1517,7 @@ function renderCustomMoodsSettings() {
 // ─── Mood button wiring (static, once at load) ────────────────────────────────
 
 document.getElementById('mood-log-btn').addEventListener('click', handleMoodLog);
-document.getElementById('mood-custom-input').addEventListener('input', () => {
-  _selectedMood = null;
-  document.querySelectorAll('#mood-chips .mood-chip').forEach(c => c.classList.remove('selected'));
-});
+// Custom mood input is additive — typing does not clear chip selections
 
 // ─── Boot ─────────────────────────────────────────────────────────────────
 
