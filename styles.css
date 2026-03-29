@@ -1120,6 +1120,26 @@ body.auth-locked .view {
 }
 
 /* ─── Habits View ────────────────────────────────────────────────────────────── */
+.habits-date-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.habits-nav-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.6rem;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.habits-nav-btn:hover:not(:disabled) { color: var(--text-primary); }
+.habits-nav-btn:disabled { opacity: 0.25; cursor: default; }
+
 .habits-progress {
   font-size: 0.88rem;
   color: var(--text-muted);

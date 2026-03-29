@@ -1220,7 +1220,7 @@ function getTodayMoodLogs() {
 
 function getTodayHabitsData() {
   const all = SunriseDB.getEntries();
-  const raw = all[habitsDateKey(todayKey())];
+  const raw = all[habitsDateKey(getHabitsViewKey())];
   if (!raw) return {};
   // fetchAllEntries wraps plain objects in an array; unwrap
   const obj = Array.isArray(raw) ? raw[0] : raw;
@@ -1343,9 +1343,38 @@ function renderTodayMoodLogs() {
 
 // ─── Habits View ──────────────────────────────────────────────────────────────
 
+let _habitsViewKey = null; // set on initHabits; null means "use today"
+
+function getHabitsViewKey() {
+  return _habitsViewKey || todayKey();
+}
+
+function offsetDate(dateKey, days) {
+  // dateKey is YYYY-MM-DD; returns dateKey shifted by `days`
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + days);
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+
 function initHabits() {
-  document.getElementById('habits-date').textContent = formatDisplayDate(todayKey());
+  _habitsViewKey = todayKey();
+  renderHabitsDateNav();
   renderHabits();
+}
+
+function renderHabitsDateNav() {
+  const key   = getHabitsViewKey();
+  const today = todayKey();
+  document.getElementById('habits-date').textContent = formatDisplayDate(key);
+
+  const prevBtn = document.getElementById('habits-prev-btn');
+  const nextBtn = document.getElementById('habits-next-btn');
+
+  // Allow up to 7 days back; no forward past today
+  const daysBack = Math.round((new Date(today) - new Date(key)) / 86400000);
+  prevBtn.disabled = daysBack >= 7;
+  nextBtn.disabled = key === today;
 }
 
 function renderHabits() {
@@ -1419,7 +1448,7 @@ async function toggleHabit(habitId, done) {
   if (!data[habitId]) data[habitId] = {};
   data[habitId].done = done;
   try {
-    await SunriseDB.saveEntry(habitsDateKey(todayKey()), data);
+    await SunriseDB.saveEntry(habitsDateKey(getHabitsViewKey()), data);
     renderHabits();
   } catch (err) {
     console.error('Failed to save habit:', err);
@@ -1432,7 +1461,7 @@ async function saveHabitNote(habitId, note) {
   if (data[habitId].note === note) return; // no change
   data[habitId].note = note;
   try {
-    await SunriseDB.saveEntry(habitsDateKey(todayKey()), data);
+    await SunriseDB.saveEntry(habitsDateKey(getHabitsViewKey()), data);
     // Update the note button indicator without full re-render
     const btn = document.querySelector(`.habit-note-btn[data-id="${habitId}"]`);
     if (btn) btn.textContent = note ? '📝' : '+ note';
@@ -1518,6 +1547,26 @@ function renderCustomMoodsSettings() {
 
 document.getElementById('mood-log-btn').addEventListener('click', handleMoodLog);
 // Custom mood input is additive — typing does not clear chip selections
+
+// ─── Habits date navigation wiring ────────────────────────────────────────────
+
+document.getElementById('habits-prev-btn').addEventListener('click', () => {
+  const prev = offsetDate(getHabitsViewKey(), -1);
+  const today = todayKey();
+  const daysBack = Math.round((new Date(today) - new Date(prev)) / 86400000);
+  if (daysBack > 7) return;
+  _habitsViewKey = prev;
+  renderHabitsDateNav();
+  renderHabits();
+});
+
+document.getElementById('habits-next-btn').addEventListener('click', () => {
+  const next = offsetDate(getHabitsViewKey(), 1);
+  if (next > todayKey()) return;
+  _habitsViewKey = next;
+  renderHabitsDateNav();
+  renderHabits();
+});
 
 // ─── Boot ─────────────────────────────────────────────────────────────────
 
