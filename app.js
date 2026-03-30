@@ -1067,6 +1067,13 @@ const authSubtitle   = document.getElementById('auth-subtitle');
 const authSubmitBtn  = document.getElementById('auth-submit-btn');
 const authEmailGroup = document.getElementById('auth-email-group');
 
+// Rate limiting — track failed attempts to slow brute-force
+let _authFailCount  = 0;
+let _authLockedUntil = 0;
+
+const AUTH_MAX_ATTEMPTS = 5;
+const AUTH_LOCKOUT_MS   = 30000; // 30 seconds
+
 function showAuthScreen(mode) {
   authScreen.classList.remove('hidden');
   document.body.classList.add('auth-locked');
@@ -1092,6 +1099,14 @@ function hideAuthScreen() {
 authForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
+  // Rate limit check
+  const now = Date.now();
+  if (now < _authLockedUntil) {
+    const secsLeft = Math.ceil((_authLockedUntil - now) / 1000);
+    authError.textContent = `Too many attempts. Please wait ${secsLeft} seconds.`;
+    return;
+  }
+
   const password = authPassword.value;
   if (!password) return;
 
@@ -1104,17 +1119,34 @@ authForm.addEventListener('submit', async (e) => {
     if (isUnlock) {
       await SunriseDB.unlockWithPassword(password);
     } else {
-      const email = authEmail.value;
-      if (!email) throw new Error('Please enter your email');
+      const email = authEmail.value.trim();
+      if (!email) {
+        authError.textContent = 'Please enter your email.';
+        authSubmitBtn.textContent = 'Sign In';
+        authSubmitBtn.disabled = false;
+        return;
+      }
       await SunriseDB.signIn(email, password);
     }
+
+    // Success — reset rate limit state
+    _authFailCount  = 0;
+    _authLockedUntil = 0;
 
     authPassword.value = '';
     hideAuthScreen();
     await postLoginInit();
 
   } catch (err) {
-    authError.textContent = err.message || 'Sign in failed. Check your credentials.';
+    // Use a generic message to avoid leaking whether an email/account exists
+    _authFailCount++;
+    if (_authFailCount >= AUTH_MAX_ATTEMPTS) {
+      _authLockedUntil = Date.now() + AUTH_LOCKOUT_MS;
+      _authFailCount   = 0;
+      authError.textContent = 'Too many failed attempts. Please wait 30 seconds.';
+    } else {
+      authError.textContent = 'Invalid email or password. Please try again.';
+    }
     authSubmitBtn.textContent = isUnlock ? 'Unlock' : 'Sign In';
   } finally {
     authSubmitBtn.disabled = false;
