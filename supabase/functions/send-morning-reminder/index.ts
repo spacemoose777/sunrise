@@ -1,5 +1,6 @@
 // Sunrise — Morning Reminder Edge Function
-// Runs every hour. Sends a push notification to users where it is currently 7am local time.
+// Runs every hour. Sends push notifications to users where it is currently
+// their chosen reminder hour in their local timezone.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import webpush from 'npm:web-push'
@@ -13,22 +14,23 @@ const MESSAGES = [
 ]
 
 Deno.serve(async () => {
-  const supabaseUrl      = Deno.env.get('SUPABASE_URL')!
-  const serviceRoleKey   = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const vapidPublicKey   = Deno.env.get('VAPID_PUBLIC_KEY')!
-  const vapidPrivateKey  = Deno.env.get('VAPID_PRIVATE_KEY')!
-  const vapidEmail       = Deno.env.get('VAPID_EMAIL')!
+  const supabaseUrl     = Deno.env.get('SUPABASE_URL')!
+  const serviceRoleKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const vapidPublicKey  = Deno.env.get('VAPID_PUBLIC_KEY')!
+  const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')!
+  const vapidEmail      = Deno.env.get('VAPID_EMAIL')!
 
   webpush.setVapidDetails(`mailto:${vapidEmail}`, vapidPublicKey, vapidPrivateKey)
 
   const supabase = createClient(supabaseUrl, serviceRoleKey)
 
-  // Fetch all subscriptions joined with each user's timezone setting
+  // timezone and notification_hour are stored directly on the row — no join needed
   const { data: subs, error } = await supabase
     .from('push_subscriptions')
-    .select('id, subscription, user_profiles(settings)')
+    .select('id, subscription, timezone, notification_hour')
 
   if (error) {
+    console.error('Failed to fetch subscriptions:', error.message)
     return new Response(JSON.stringify({ error: error.message }), { status: 500 })
   }
 
@@ -37,14 +39,13 @@ Deno.serve(async () => {
   const expired: string[] = []
 
   for (const sub of subs ?? []) {
-    const settings = (sub.user_profiles as { settings?: { timezone?: string } } | null)?.settings
-    const tz = settings?.timezone ?? 'Pacific/Auckland'
+    const tz         = sub.timezone          ?? 'Pacific/Auckland'
+    const targetHour = sub.notification_hour ?? 7
 
-    // Only send if it's currently 7am in the user's timezone
     const localHour = parseInt(
       new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', hour12: false }).format(now)
     )
-    if (localHour !== 7) continue
+    if (localHour !== targetHour) continue
 
     const body = MESSAGES[Math.floor(Math.random() * MESSAGES.length)]
 
@@ -54,21 +55,20 @@ Deno.serve(async () => {
         JSON.stringify({ title: 'Sunrise', body })
       )
       sent++
+      console.log(`Sent to subscription ${sub.id} (${tz} hour ${targetHour})`)
     } catch (err: unknown) {
       const status = (err as { statusCode?: number }).statusCode
-      // 410 Gone or 404 Not Found means the subscription is no longer valid
-      if (status === 410 || status === 404) {
-        expired.push(sub.id)
-      }
+      console.error(`Failed for ${sub.id}: status ${status}`)
+      if (status === 410 || status === 404) expired.push(sub.id)
     }
   }
 
-  // Remove any expired subscriptions
   if (expired.length > 0) {
     await supabase.from('push_subscriptions').delete().in('id', expired)
+    console.log(`Removed ${expired.length} expired subscriptions`)
   }
 
-  return new Response(JSON.stringify({ sent, expired: expired.length }), {
+  return new Response(JSON.stringify({ sent, expired: expired.length, checked: subs?.length ?? 0 }), {
     headers: { 'Content-Type': 'application/json' },
   })
 })

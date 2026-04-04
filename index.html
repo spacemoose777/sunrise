@@ -267,13 +267,17 @@
 
     <section class="card">
       <h2 class="section-title">Morning Reminder</h2>
-      <p class="section-hint">Enable a daily notification at 7:00 am to prompt your journal.</p>
+      <p class="section-hint">Get a daily push notification to prompt your journal — works even when the app is closed.</p>
       <div class="setting-row">
-        <label class="toggle-label" for="notif-toggle">Daily 7am notification</label>
+        <label class="toggle-label" for="notif-toggle">Daily reminder</label>
         <label class="toggle-switch">
           <input type="checkbox" id="notif-toggle" />
           <span class="toggle-slider"></span>
         </label>
+      </div>
+      <div class="notif-time-row" id="notif-time-row" style="display:none">
+        <label class="section-hint" style="margin:0;">Remind me at</label>
+        <input type="time" id="notif-time" class="field notif-time-input" value="07:00" />
       </div>
       <p class="notif-status" id="notif-status"></p>
     </section>

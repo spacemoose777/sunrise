@@ -101,6 +101,19 @@ function setTimezone(tz) {
   localStorage.setItem(TZ_KEY, tz);
 }
 
+// ─── Notification hour ────────────────────────────────────────────────────────
+
+const NOTIF_HOUR_KEY = 'sunrise_notif_hour';
+
+function getNotifHour() {
+  const stored = localStorage.getItem(NOTIF_HOUR_KEY);
+  return stored !== null ? parseInt(stored, 10) : 7;
+}
+
+function setNotifHour(hour) {
+  localStorage.setItem(NOTIF_HOUR_KEY, String(hour));
+}
+
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
 function todayKey() {
@@ -639,27 +652,41 @@ function initSettings() {
   const toggle = document.getElementById('notif-toggle');
   const status = document.getElementById('notif-status');
 
+  const timeRow  = document.getElementById('notif-time-row');
+  const timeInput = document.getElementById('notif-time');
+
+  // Restore saved time
+  const savedHour = getNotifHour();
+  timeInput.value = String(savedHour).padStart(2, '0') + ':00';
+
   // Reflect current push subscription state
   navigator.serviceWorker?.ready.then(async reg => {
     const sub = await reg.pushManager?.getSubscription();
     toggle.checked = !!sub;
+    timeRow.style.display = sub ? 'flex' : 'none';
   });
 
   toggle.addEventListener('change', async () => {
     toggle.disabled = true;
     try {
       if (toggle.checked) {
-        const ok = await subscribeToPush();
+        const hour = parseInt(timeInput.value.split(':')[0], 10);
+        const ok = await subscribeToPush(hour);
         if (ok) {
-          status.textContent = "✓ Notifications enabled. You'll be reminded at 7am.";
+          setNotifHour(hour);
+          timeRow.style.display = 'flex';
+          const pad = h => String(h).padStart(2, '0');
+          status.textContent = `✓ Reminder set for ${pad(hour)}:00 daily.`;
           status.className   = 'notif-status success';
         } else {
           toggle.checked = false;
+          timeRow.style.display = 'none';
           status.textContent = 'Notifications were blocked. Please enable them in your device settings.';
           status.className   = 'notif-status error';
         }
       } else {
         await unsubscribeFromPush();
+        timeRow.style.display = 'none';
         status.textContent = 'Notifications disabled.';
         status.className   = 'notif-status';
       }
@@ -669,6 +696,22 @@ function initSettings() {
       console.error('Push toggle error:', err);
     } finally {
       toggle.disabled = false;
+    }
+  });
+
+  // Changing the time updates the subscription record without re-subscribing
+  timeInput.addEventListener('change', async () => {
+    if (!toggle.checked) return;
+    const hour = parseInt(timeInput.value.split(':')[0], 10);
+    setNotifHour(hour);
+    try {
+      await SunriseDB.updatePushSettings(getTimezone(), hour);
+      const pad = h => String(h).padStart(2, '0');
+      status.textContent = `✓ Reminder updated to ${pad(hour)}:00.`;
+      status.className   = 'notif-status success';
+      setTimeout(() => { status.textContent = ''; status.className = 'notif-status'; }, 3000);
+    } catch (err) {
+      console.error('Failed to update push settings:', err);
     }
   });
 
@@ -940,7 +983,7 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
 }
 
-async function subscribeToPush() {
+async function subscribeToPush(hour) {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
   if (!('Notification' in window)) return false;
 
@@ -956,7 +999,7 @@ async function subscribeToPush() {
     applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
   });
 
-  await SunriseDB.savePushSubscription(subscription.toJSON());
+  await SunriseDB.savePushSubscription(subscription.toJSON(), getTimezone(), hour ?? getNotifHour());
   return true;
 }
 

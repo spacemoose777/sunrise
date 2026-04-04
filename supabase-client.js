@@ -185,10 +185,23 @@ const SunriseDB = (() => {
 
   // ── Push subscriptions ──
 
-  async function savePushSubscription(subscription) {
+  async function savePushSubscription(subscription, timezone, notificationHour) {
     const { error } = await supabase
       .from('push_subscriptions')
-      .upsert({ user_id: _user.id, subscription }, { onConflict: 'user_id' });
+      .upsert({
+        user_id: _user.id,
+        subscription,
+        timezone,
+        notification_hour: notificationHour,
+      }, { onConflict: 'user_id' });
+    if (error) throw error;
+  }
+
+  async function updatePushSettings(timezone, notificationHour) {
+    const { error } = await supabase
+      .from('push_subscriptions')
+      .update({ timezone, notification_hour: notificationHour })
+      .eq('user_id', _user.id);
     if (error) throw error;
   }
 
@@ -234,7 +247,7 @@ const SunriseDB = (() => {
     unlockWithPassword,
     getEntries, saveEntry, appendEntry, deleteAllEntries,
     loadSettings, saveSettings,
-    savePushSubscription, deletePushSubscription,
+    savePushSubscription, updatePushSettings, deletePushSubscription,
     hasLocalStorageEntries, importLocalStorageEntries
   };
 

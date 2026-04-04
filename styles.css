@@ -494,6 +494,22 @@ input:checked + .toggle-slider::before {
   background: var(--accent);
 }
 
+.notif-time-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.notif-time-input {
+  width: auto;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
 .notif-status {
   margin-top: 10px;
   font-size: 0.82rem;
