@@ -101,18 +101,33 @@ function setTimezone(tz) {
   localStorage.setItem(TZ_KEY, tz);
 }
 
-// ─── Notification hour ────────────────────────────────────────────────────────
+// ─── Notification time (stored as minutes since midnight) ────────────────────
 
 const NOTIF_HOUR_KEY = 'sunrise_notif_hour';
 
-function getNotifHour() {
+function getNotifTime() {
   const stored = localStorage.getItem(NOTIF_HOUR_KEY);
-  return stored !== null ? parseInt(stored, 10) : 7;
+  if (stored === null) return 420; // default 7:00am
+  const val = parseInt(stored, 10);
+  // Migrate: old format stored 0–23 as hour only
+  return val <= 23 ? val * 60 : val;
 }
 
-function setNotifHour(hour) {
-  localStorage.setItem(NOTIF_HOUR_KEY, String(hour));
+function setNotifTime(totalMins) {
+  localStorage.setItem(NOTIF_HOUR_KEY, String(totalMins));
 }
+
+function formatNotifTime(totalMins) {
+  const h  = Math.floor(totalMins / 60);
+  const m  = totalMins % 60;
+  const period = h < 12 ? 'am' : 'pm';
+  const h12    = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+}
+
+// Keep old names as aliases so subscribeToPush callers still work
+function getNotifHour() { return getNotifTime(); }
+function setNotifHour(v) { setNotifTime(v); }
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
@@ -652,11 +667,21 @@ function initSettings() {
   const toggle = document.getElementById('notif-toggle');
   const status = document.getElementById('notif-status');
 
-  const timeRow  = document.getElementById('notif-time-row');
+  const timeRow   = document.getElementById('notif-time-row');
   const timeInput = document.getElementById('notif-time');
 
-  // Restore saved time
-  timeInput.value = String(getNotifHour());
+  // Populate select: every 15 minutes from 5:00am to 9:45pm
+  const savedMins = getNotifTime();
+  for (let h = 5; h <= 21; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const totalMins = h * 60 + m;
+      const opt = document.createElement('option');
+      opt.value = totalMins;
+      opt.textContent = formatNotifTime(totalMins);
+      if (totalMins === savedMins) opt.selected = true;
+      timeInput.appendChild(opt);
+    }
+  }
 
   // Reflect current push subscription state
   navigator.serviceWorker?.ready.then(async reg => {
@@ -669,13 +694,12 @@ function initSettings() {
     toggle.disabled = true;
     try {
       if (toggle.checked) {
-        const hour = parseInt(timeInput.value, 10);
-        const ok = await subscribeToPush(hour);
+        const mins = parseInt(timeInput.value, 10);
+        const ok = await subscribeToPush(mins);
         if (ok) {
-          setNotifHour(hour);
+          setNotifTime(mins);
           timeRow.style.display = 'flex';
-          const pad = h => String(h).padStart(2, '0');
-          status.textContent = `✓ Reminder set for ${pad(hour)}:00 daily.`;
+          status.textContent = `✓ Reminder set for ${formatNotifTime(mins)} daily.`;
           status.className   = 'notif-status success';
         } else {
           toggle.checked = false;
@@ -701,12 +725,11 @@ function initSettings() {
   // Changing the time updates the subscription record without re-subscribing
   timeInput.addEventListener('change', async () => {
     if (!toggle.checked) return;
-    const hour = parseInt(timeInput.value, 10);
-    setNotifHour(hour);
+    const mins = parseInt(timeInput.value, 10);
+    setNotifTime(mins);
     try {
-      await SunriseDB.updatePushSettings(getTimezone(), hour);
-      const pad = h => String(h).padStart(2, '0');
-      status.textContent = `✓ Reminder updated to ${pad(hour)}:00.`;
+      await SunriseDB.updatePushSettings(getTimezone(), mins);
+      status.textContent = `✓ Reminder updated to ${formatNotifTime(mins)}.`;
       status.className   = 'notif-status success';
       setTimeout(() => { status.textContent = ''; status.className = 'notif-status'; }, 3000);
     } catch (err) {
@@ -998,7 +1021,7 @@ async function subscribeToPush(hour) {
     applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
   });
 
-  await SunriseDB.savePushSubscription(subscription.toJSON(), getTimezone(), hour ?? getNotifHour());
+  await SunriseDB.savePushSubscription(subscription.toJSON(), getTimezone(), hour ?? getNotifTime());
   return true;
 }
 

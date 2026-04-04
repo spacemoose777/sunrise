@@ -39,13 +39,16 @@ Deno.serve(async () => {
   const expired: string[] = []
 
   for (const sub of subs ?? []) {
-    const tz         = sub.timezone          ?? 'Pacific/Auckland'
-    const targetHour = sub.notification_hour ?? 7
+    const tz          = sub.timezone          ?? 'Pacific/Auckland'
+    const targetMins  = sub.notification_hour ?? 420  // stored as minutes since midnight; default 7:00am
 
-    const localHour = parseInt(
-      new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', hour12: false }).format(now)
-    )
-    if (localHour !== targetHour) continue
+    const fmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: 'numeric', hour12: false })
+    const parts = fmt.formatToParts(now)
+    const localH = parseInt(parts.find(p => p.type === 'hour')!.value)
+    const localM = parseInt(parts.find(p => p.type === 'minute')!.value)
+    const localMins = localH * 60 + localM
+
+    if (localMins !== targetMins) continue
 
     const body = MESSAGES[Math.floor(Math.random() * MESSAGES.length)]
 
