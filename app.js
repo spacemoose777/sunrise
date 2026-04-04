@@ -656,8 +656,7 @@ function initSettings() {
   const timeInput = document.getElementById('notif-time');
 
   // Restore saved time
-  const savedHour = getNotifHour();
-  timeInput.value = String(savedHour).padStart(2, '0') + ':00';
+  timeInput.value = String(getNotifHour());
 
   // Reflect current push subscription state
   navigator.serviceWorker?.ready.then(async reg => {
@@ -670,7 +669,7 @@ function initSettings() {
     toggle.disabled = true;
     try {
       if (toggle.checked) {
-        const hour = parseInt(timeInput.value.split(':')[0], 10);
+        const hour = parseInt(timeInput.value, 10);
         const ok = await subscribeToPush(hour);
         if (ok) {
           setNotifHour(hour);
@@ -702,7 +701,7 @@ function initSettings() {
   // Changing the time updates the subscription record without re-subscribing
   timeInput.addEventListener('change', async () => {
     if (!toggle.checked) return;
-    const hour = parseInt(timeInput.value.split(':')[0], 10);
+    const hour = parseInt(timeInput.value, 10);
     setNotifHour(hour);
     try {
       await SunriseDB.updatePushSettings(getTimezone(), hour);
