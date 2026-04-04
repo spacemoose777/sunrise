@@ -639,26 +639,36 @@ function initSettings() {
   const toggle = document.getElementById('notif-toggle');
   const status = document.getElementById('notif-status');
 
-  toggle.checked = localStorage.getItem(NOTIF_KEY) === 'true';
+  // Reflect current push subscription state
+  navigator.serviceWorker?.ready.then(async reg => {
+    const sub = await reg.pushManager?.getSubscription();
+    toggle.checked = !!sub;
+  });
 
   toggle.addEventListener('change', async () => {
-    if (toggle.checked) {
-      const granted = await requestNotificationPermission();
-      if (granted) {
-        localStorage.setItem(NOTIF_KEY, 'true');
-        scheduleNotifications();
-        status.textContent = "✓ Notifications enabled. You'll be reminded at 7am.";
-        status.className   = 'notif-status success';
+    toggle.disabled = true;
+    try {
+      if (toggle.checked) {
+        const ok = await subscribeToPush();
+        if (ok) {
+          status.textContent = "✓ Notifications enabled. You'll be reminded at 7am.";
+          status.className   = 'notif-status success';
+        } else {
+          toggle.checked = false;
+          status.textContent = 'Notifications were blocked. Please enable them in your device settings.';
+          status.className   = 'notif-status error';
+        }
       } else {
-        toggle.checked = false;
-        localStorage.setItem(NOTIF_KEY, 'false');
-        status.textContent = 'Notifications were blocked. Please enable them in your browser settings.';
-        status.className   = 'notif-status error';
+        await unsubscribeFromPush();
+        status.textContent = 'Notifications disabled.';
+        status.className   = 'notif-status';
       }
-    } else {
-      localStorage.setItem(NOTIF_KEY, 'false');
-      status.textContent = 'Notifications disabled.';
-      status.className   = 'notif-status';
+    } catch (err) {
+      status.textContent = 'Something went wrong. Please try again.';
+      status.className   = 'notif-status error';
+      console.error('Push toggle error:', err);
+    } finally {
+      toggle.disabled = false;
     }
   });
 
@@ -918,23 +928,44 @@ function renderCustomQuestions() {
   });
 }
 
-// ─── Notifications ───────────────────────────────────────────────────────────
+// ─── Notifications (Web Push) ─────────────────────────────────────────────────
 
-async function requestNotificationPermission() {
-  if (!('Notification' in window)) return false;
-  if (Notification.permission === 'granted') return true;
-  const result = await Notification.requestPermission();
-  return result === 'granted';
+// Paste your VAPID public key here after running: node generate-vapid-keys.js
+const VAPID_PUBLIC_KEY = 'REPLACE_WITH_YOUR_VAPID_PUBLIC_KEY';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw     = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
 }
 
-function scheduleNotifications() {
-  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-    navigator.serviceWorker.controller.postMessage({
-      type: 'SCHEDULE_NOTIFICATION',
-      hour: 7,
-      minute: 0
-    });
-  }
+async function subscribeToPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+  if (!('Notification' in window)) return false;
+
+  const permission = Notification.permission === 'granted'
+    ? 'granted'
+    : await Notification.requestPermission();
+  if (permission !== 'granted') return false;
+
+  const reg = await navigator.serviceWorker.ready;
+  const existing = await reg.pushManager.getSubscription();
+  const subscription = existing ?? await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+  });
+
+  await SunriseDB.savePushSubscription(subscription.toJSON());
+  return true;
+}
+
+async function unsubscribeFromPush() {
+  if (!('serviceWorker' in navigator)) return;
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+  if (sub) await sub.unsubscribe();
+  await SunriseDB.deletePushSubscription();
 }
 
 // ─── Export (JSON) ────────────────────────────────────────────────────────────
@@ -1018,9 +1049,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').then(reg => {
     console.log('SW registered:', reg.scope);
 
-    if (localStorage.getItem(NOTIF_KEY) === 'true' && Notification.permission === 'granted') {
-      navigator.serviceWorker.ready.then(() => scheduleNotifications());
-    }
+    // Push subscriptions are managed server-side — nothing to schedule here
   }).catch(err => console.warn('SW registration failed:', err));
 
   // Reload the page when a new service worker activates (picks up fresh assets)

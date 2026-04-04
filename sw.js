@@ -70,67 +70,31 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// ─── Notification scheduling ──────────────────────────────────────────────────
-// The app sends a SCHEDULE_NOTIFICATION message; we store the config and
-// set a recurring daily alarm using setTimeout chains managed by the SW.
+// ─── Push notifications (Web Push — works when app is closed) ────────────────
 
-let notifTimer = null;
+self.addEventListener('push', event => {
+  const data = event.data ? event.data.json() : {};
+  const title = data.title || 'Sunrise';
+  const body  = data.body  || 'Good morning ☀️ Time for your daily reflection.';
 
-function msUntilNext7am() {
-  const now  = new Date();
-  const next = new Date();
-  next.setHours(7, 0, 0, 0);
-  if (next <= now) next.setDate(next.getDate() + 1);
-  return next - now;
-}
-
-function scheduleDaily7amNotification() {
-  // Clear any existing timer
-  if (notifTimer) clearTimeout(notifTimer);
-
-  const delay = msUntilNext7am();
-
-  notifTimer = setTimeout(() => {
-    showMorningNotification();
-    // Reschedule for next day
-    scheduleDaily7amNotification();
-  }, delay);
-}
-
-function showMorningNotification() {
-  const messages = [
-    'Good morning ☀️ Time for your daily reflection.',
-    'Rise and reflect 🌅 Your journal is waiting.',
-    'A new day begins. What are you grateful for? 🌿',
-    'Morning! Take a moment to set your intention for today.',
-    'Good morning. A few mindful minutes can shape your whole day. ✨',
-  ];
-  const msg = messages[Math.floor(Math.random() * messages.length)];
-
-  self.registration.showNotification('Sunrise', {
-    body: msg,
-    icon: './icons/icon-192.png',
-    badge: './icons/icon-192.png',
-    tag: 'sunrise-morning',         // replaces any existing notification
-    renotify: false,
-    requireInteraction: false,
-    data: { url: self.registration.scope },
-  });
-}
-
-// ─── Message handler ─────────────────────────────────────────────────────────
-self.addEventListener('message', event => {
-  if (event.data && event.data.type === 'SCHEDULE_NOTIFICATION') {
-    scheduleDaily7amNotification();
-  }
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon:  './icons/icon-192.png',
+      badge: './icons/icon-192.png',
+      tag:   'sunrise-morning',
+      renotify: false,
+      requireInteraction: false,
+      data: { url: self.registration.scope },
+    })
+  );
 });
 
-// ─── Notification click: open/focus the app ───────────────────────────────────
+// ─── Notification click: open/focus the app ──────────────────────────────────
+
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  const appUrl = event.notification.data && event.notification.data.url
-    ? event.notification.data.url
-    : self.registration.scope;
+  const appUrl = event.notification.data?.url ?? self.registration.scope;
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
@@ -143,6 +107,3 @@ self.addEventListener('notificationclick', event => {
     })
   );
 });
-
-// Auto-schedule on SW startup (persists when app is closed)
-scheduleDaily7amNotification();

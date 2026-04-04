@@ -183,6 +183,23 @@ const SunriseDB = (() => {
     if (error) throw error;
   }
 
+  // ── Push subscriptions ──
+
+  async function savePushSubscription(subscription) {
+    const { error } = await supabase
+      .from('push_subscriptions')
+      .upsert({ user_id: _user.id, subscription }, { onConflict: 'user_id' });
+    if (error) throw error;
+  }
+
+  async function deletePushSubscription() {
+    const { error } = await supabase
+      .from('push_subscriptions')
+      .delete()
+      .eq('user_id', _user.id);
+    if (error) throw error;
+  }
+
   // ── Migration from localStorage ──
 
   function hasLocalStorageEntries() {
@@ -217,6 +234,7 @@ const SunriseDB = (() => {
     unlockWithPassword,
     getEntries, saveEntry, appendEntry, deleteAllEntries,
     loadSettings, saveSettings,
+    savePushSubscription, deletePushSubscription,
     hasLocalStorageEntries, importLocalStorageEntries
   };
 
