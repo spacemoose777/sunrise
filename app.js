@@ -931,7 +931,7 @@ function renderCustomQuestions() {
 // ─── Notifications (Web Push) ─────────────────────────────────────────────────
 
 // Paste your VAPID public key here after running: node generate-vapid-keys.js
-const VAPID_PUBLIC_KEY = 'REPLACE_WITH_YOUR_VAPID_PUBLIC_KEY';
+const VAPID_PUBLIC_KEY = 'BOz9cKW5uNi6e7x7_YLAl7eCrb-TT6Y9dV8i_gc5uxY0x0j13GKTzTZkT4xAevsCeum9gfwM9Vs0KC_hAvtQbdY';
 
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
