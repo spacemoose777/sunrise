@@ -129,6 +129,26 @@ function formatNotifTime(totalMins) {
 function getNotifHour() { return getNotifTime(); }
 function setNotifHour(v) { setNotifTime(v); }
 
+const MOOD_PROMPT_KEY = 'sunrise_mood_prompt';
+const MOOD_PROMPT_DEFAULTS = { enabled: false, start: 9, end: 21 };
+
+function getMoodPromptSettings() {
+  try {
+    const stored = localStorage.getItem(MOOD_PROMPT_KEY);
+    return stored ? { ...MOOD_PROMPT_DEFAULTS, ...JSON.parse(stored) } : { ...MOOD_PROMPT_DEFAULTS };
+  } catch { return { ...MOOD_PROMPT_DEFAULTS }; }
+}
+
+function setMoodPromptSettings(settings) {
+  localStorage.setItem(MOOD_PROMPT_KEY, JSON.stringify(settings));
+}
+
+function formatHour(h) {
+  const period = h < 12 ? 'am' : 'pm';
+  const h12 = h % 12 || 12;
+  return `${h12} ${period}`;
+}
+
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
 function todayKey() {
@@ -736,6 +756,97 @@ function initSettings() {
       console.error('Failed to update push settings:', err);
     }
   });
+
+  // ── Mood Check-in Prompt ─────────────────────────────────────────────────
+  const moodToggle     = document.getElementById('mood-prompt-toggle');
+  const moodWindowRow  = document.getElementById('mood-prompt-window-row');
+  const moodStartSel   = document.getElementById('mood-prompt-start');
+  const moodEndSel     = document.getElementById('mood-prompt-end');
+  const moodStatus     = document.getElementById('mood-prompt-status');
+
+  const moodSettings = getMoodPromptSettings();
+
+  // Populate start/end hour selects (5am–11pm)
+  for (let h = 5; h <= 23; h++) {
+    const optS = document.createElement('option');
+    optS.value = h;
+    optS.textContent = formatHour(h);
+    if (h === moodSettings.start) optS.selected = true;
+    moodStartSel.appendChild(optS);
+
+    const optE = document.createElement('option');
+    optE.value = h;
+    optE.textContent = formatHour(h);
+    if (h === moodSettings.end) optE.selected = true;
+    moodEndSel.appendChild(optE);
+  }
+
+  moodToggle.checked = moodSettings.enabled;
+  moodWindowRow.style.display = moodSettings.enabled ? 'block' : 'none';
+
+  moodToggle.addEventListener('change', async () => {
+    moodToggle.disabled = true;
+    try {
+      const enabled = moodToggle.checked;
+      const start   = parseInt(moodStartSel.value, 10);
+      const end     = parseInt(moodEndSel.value, 10);
+
+      if (enabled && start >= end) {
+        moodToggle.checked = false;
+        moodStatus.textContent = 'End time must be after start time.';
+        moodStatus.className   = 'notif-status error';
+        return;
+      }
+
+      if (enabled) {
+        // Ensure we have a push subscription
+        const ok = await subscribeToPush(getNotifTime());
+        if (!ok) {
+          moodToggle.checked = false;
+          moodStatus.textContent = 'Notifications were blocked. Please enable them in your device settings.';
+          moodStatus.className   = 'notif-status error';
+          return;
+        }
+      }
+
+      setMoodPromptSettings({ enabled, start, end });
+      await SunriseDB.updateMoodPromptSettings(enabled, start, end);
+      moodWindowRow.style.display = enabled ? 'block' : 'none';
+      moodStatus.textContent = enabled
+        ? `✓ Mood check-in enabled between ${formatHour(start)} and ${formatHour(end)}.`
+        : 'Mood check-in disabled.';
+      moodStatus.className = 'notif-status' + (enabled ? ' success' : '');
+      setTimeout(() => { moodStatus.textContent = ''; moodStatus.className = 'notif-status'; }, 3000);
+    } catch (err) {
+      moodStatus.textContent = 'Something went wrong. Please try again.';
+      moodStatus.className   = 'notif-status error';
+      console.error('Mood prompt toggle error:', err);
+    } finally {
+      moodToggle.disabled = false;
+    }
+  });
+
+  async function saveMoodWindow() {
+    const start = parseInt(moodStartSel.value, 10);
+    const end   = parseInt(moodEndSel.value, 10);
+    if (start >= end) {
+      moodStatus.textContent = 'End time must be after start time.';
+      moodStatus.className   = 'notif-status error';
+      return;
+    }
+    setMoodPromptSettings({ enabled: true, start, end });
+    try {
+      await SunriseDB.updateMoodPromptSettings(true, start, end);
+      moodStatus.textContent = `✓ Window updated: ${formatHour(start)} – ${formatHour(end)}.`;
+      moodStatus.className   = 'notif-status success';
+      setTimeout(() => { moodStatus.textContent = ''; moodStatus.className = 'notif-status'; }, 3000);
+    } catch (err) {
+      console.error('Failed to update mood prompt settings:', err);
+    }
+  }
+
+  moodStartSel.addEventListener('change', saveMoodWindow);
+  moodEndSel.addEventListener('change',   saveMoodWindow);
 
   // ── Custom Questions ─────────────────────────────────────────────────────
   renderCustomQuestions();

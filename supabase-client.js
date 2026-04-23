@@ -205,6 +205,21 @@ const SunriseDB = (() => {
     if (error) throw error;
   }
 
+  async function updateMoodPromptSettings(enabled, startHour, endHour) {
+    const { error } = await supabase
+      .from('push_subscriptions')
+      .update({
+        mood_prompt_enabled: enabled,
+        mood_prompt_start:   startHour,
+        mood_prompt_end:     endHour,
+        // Clear today's scheduled time so the edge function repicks within the new window
+        mood_prompt_today_date: null,
+        mood_prompt_today_mins: null,
+      })
+      .eq('user_id', _user.id);
+    if (error) throw error;
+  }
+
   async function deletePushSubscription() {
     const { error } = await supabase
       .from('push_subscriptions')
@@ -247,7 +262,7 @@ const SunriseDB = (() => {
     unlockWithPassword,
     getEntries, saveEntry, appendEntry, deleteAllEntries,
     loadSettings, saveSettings,
-    savePushSubscription, updatePushSettings, deletePushSubscription,
+    savePushSubscription, updatePushSettings, updateMoodPromptSettings, deletePushSubscription,
     hasLocalStorageEntries, importLocalStorageEntries
   };
 

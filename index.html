@@ -283,6 +283,27 @@
     </section>
 
     <section class="card">
+      <h2 class="section-title">Mood Check-in</h2>
+      <p class="section-hint">Once a day at a random time, get a nudge to log your mood — works even when the app is closed.</p>
+      <div class="setting-row">
+        <label class="toggle-label" for="mood-prompt-toggle">Random mood check-in</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="mood-prompt-toggle" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div id="mood-prompt-window-row" style="display:none">
+        <div class="notif-time-row" style="margin-top:0.5rem;gap:0.5rem">
+          <label class="section-hint" style="margin:0">Between</label>
+          <select id="mood-prompt-start" class="field notif-time-input"></select>
+          <label class="section-hint" style="margin:0">and</label>
+          <select id="mood-prompt-end" class="field notif-time-input"></select>
+        </div>
+      </div>
+      <p class="notif-status" id="mood-prompt-status"></p>
+    </section>
+
+    <section class="card">
       <h2 class="section-title">Data</h2>
       <p class="section-hint">Your journal is end-to-end encrypted and synced to the cloud.</p>
       <div class="data-actions">
