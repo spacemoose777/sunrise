@@ -130,7 +130,10 @@
     </header>
 
     <section class="card">
-      <h2 class="section-title"><span class="section-icon">🎭</span> How are you feeling?</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h2 class="section-title" style="margin:0"><span class="section-icon">🎭</span> How are you feeling?</h2>
+        <button class="mood-edit-btn" id="mood-edit-btn">Edit</button>
+      </div>
       <div class="mood-chips" id="mood-chips"></div>
       <input type="text" class="field" id="mood-custom-input" placeholder="Or type your own mood…" autocomplete="off" style="margin-top:10px;" />
       <p class="section-hint" style="margin-top:14px; margin-bottom:8px;">What are you doing right now? <span style="color:var(--text-hint)">(optional)</span></p>

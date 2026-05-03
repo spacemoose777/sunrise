@@ -1099,6 +1099,35 @@ body.auth-locked .view {
   font-weight: 600;
 }
 
+.mood-chip--removable {
+  border-color: var(--text-hint);
+  opacity: 0.85;
+}
+.mood-chip--removable:hover {
+  border-color: #e74c3c;
+  background: rgba(231, 76, 60, 0.08);
+  color: #e74c3c;
+  opacity: 1;
+}
+.mood-chip-x {
+  font-size: 0.75rem;
+  margin-left: 5px;
+  opacity: 0.6;
+}
+
+.mood-edit-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-family: var(--font);
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.mood-edit-btn:hover {
+  text-decoration: underline;
+}
+
 /* ─── Mood Log Items ─────────────────────────────────────────────────────────── */
 .mood-log-item {
   display: flex;

@@ -1444,7 +1444,8 @@ document.getElementById('migration-skip').addEventListener('click', () => {
 
 // ─── Mood View ────────────────────────────────────────────────────────────────
 
-let _selectedMoods = new Set();
+let _selectedMoods  = new Set();
+let _moodEditMode   = false;
 
 function moodDateKey(dateKey) { return 'mood:'   + dateKey; }
 function habitsDateKey(dateKey) { return 'habits:' + dateKey; }
@@ -1467,10 +1468,13 @@ function getTodayHabitsData() {
 function initMood() {
   document.getElementById('mood-date').textContent = formatDisplayDate(todayKey());
   _selectedMoods = new Set();
+  _moodEditMode  = false;
   document.getElementById('mood-custom-input').value = '';
   document.getElementById('mood-activity-input').value = '';
   renderMoodChips();
   renderTodayMoodLogs();
+  const editBtn = document.getElementById('mood-edit-btn');
+  if (editBtn) editBtn.textContent = 'Edit';
 }
 
 function renderMoodChips() {
@@ -1482,11 +1486,14 @@ function renderMoodChips() {
     ...customMoods.map(label => ({ label, emoji: '💭', custom: true }))
   ];
 
-  container.innerHTML = allMoods.map(m =>
-    `<button class="mood-chip${_selectedMoods.has(m.label) ? ' selected' : ''}" data-mood="${escapeHTML(m.label)}">${m.emoji} ${escapeHTML(m.label)}</button>`
-  ).join('');
+  container.innerHTML = allMoods.map(m => {
+    if (_moodEditMode && m.custom) {
+      return `<button class="mood-chip mood-chip--removable" data-remove-mood="${escapeHTML(m.label)}">${m.emoji} ${escapeHTML(m.label)} <span class="mood-chip-x">✕</span></button>`;
+    }
+    return `<button class="mood-chip${_selectedMoods.has(m.label) ? ' selected' : ''}" data-mood="${escapeHTML(m.label)}">${m.emoji} ${escapeHTML(m.label)}</button>`;
+  }).join('');
 
-  container.querySelectorAll('.mood-chip').forEach(chip => {
+  container.querySelectorAll('.mood-chip[data-mood]').forEach(chip => {
     chip.addEventListener('click', () => {
       const mood = chip.dataset.mood;
       if (_selectedMoods.has(mood)) {
@@ -1495,6 +1502,16 @@ function renderMoodChips() {
         _selectedMoods.add(mood);
       }
       chip.classList.toggle('selected', _selectedMoods.has(mood));
+    });
+  });
+
+  container.querySelectorAll('.mood-chip--removable').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const mood = chip.dataset.removeMood;
+      const updated = getCustomMoods().filter(m => m !== mood);
+      saveCustomMoods(updated);
+      renderMoodChips();
+      renderCustomMoodsSettings();
     });
   });
 }
@@ -1783,7 +1800,12 @@ function renderCustomMoodsSettings() {
 // ─── Mood button wiring (static, once at load) ────────────────────────────────
 
 document.getElementById('mood-log-btn').addEventListener('click', handleMoodLog);
-// Custom mood input is additive — typing does not clear chip selections
+
+document.getElementById('mood-edit-btn').addEventListener('click', () => {
+  _moodEditMode = !_moodEditMode;
+  document.getElementById('mood-edit-btn').textContent = _moodEditMode ? 'Done' : 'Edit';
+  renderMoodChips();
+});
 
 // ─── Habits date navigation wiring ────────────────────────────────────────────
 
