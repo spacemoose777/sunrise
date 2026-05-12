@@ -125,6 +125,37 @@ body {
   letter-spacing: 0.03em;
 }
 
+/* ─── Koan Card ─────────────────────────────────────────────────────────────── */
+.koan-card {
+  background: linear-gradient(135deg, #1a1710 0%, #201c12 100%);
+  border-color: rgba(180, 140, 60, 0.25);
+  text-align: center;
+  margin-top: 0;
+}
+
+.koan-symbol {
+  font-size: 1.6rem;
+  opacity: 0.45;
+  margin-bottom: 10px;
+  line-height: 1;
+}
+
+.koan-text {
+  font-size: 0.97rem;
+  color: var(--text);
+  font-style: italic;
+  line-height: 1.75;
+  margin-bottom: 10px;
+}
+
+.koan-hint {
+  font-size: 0.75rem;
+  color: #b5922a;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
 /* ─── Section Headers ───────────────────────────────────────────────────────── */
 .section-title {
   font-size: 1rem;

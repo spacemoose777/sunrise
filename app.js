@@ -229,6 +229,27 @@ function getDailyQuote() {
   return QUOTES[idx];
 }
 
+// ─── Daily Koan ──────────────────────────────────────────────────────────────
+
+function getDailyKoan() {
+  const now   = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now - start) / 86400000);
+  // Offset by a prime so koan and quote don't sync up on the same day index
+  return KOANS[(dayOfYear + 37) % KOANS.length];
+}
+
+function renderKoan() {
+  const el = document.getElementById('koan-section');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="koan-card card">
+      <div class="koan-symbol">☯</div>
+      <p class="koan-text">${getDailyKoan()}</p>
+      <p class="koan-hint">Sit with this.</p>
+    </div>`;
+}
+
 // ─── Navigation ──────────────────────────────────────────────────────────────
 
 const views   = document.querySelectorAll('.view');
@@ -260,6 +281,7 @@ function initToday() {
   updateGreeting();
   refreshQuote();
   renderJournalForm();
+  renderKoan();
   updateTodayEntryCount();
   clearForm();
   document.getElementById('save-btn').textContent = 'Save Entry';
