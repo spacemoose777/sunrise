@@ -266,8 +266,9 @@ function showView(name) {
 
   if (name === 'history')  renderHistory();
   if (name === 'settings') initSettings();
-  if (name === 'mood')    initMood();
-  if (name === 'habits')  initHabits();
+  if (name === 'mood')     initMood();
+  if (name === 'habits')   initHabits();
+  if (name === 'trends')   initTrends();
 }
 
 navBtns.forEach(btn => {
